@@ -9,7 +9,7 @@ import './App.css'; // Assuming global styles are in App.css or similar
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/Web_Project/">
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/contacto" element={<Contacto />} />
