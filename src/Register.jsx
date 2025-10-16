@@ -2,7 +2,7 @@
 import { Search, Phone, Menu } from "lucide-react"; // Note: Menu, Search, Phone are not used, consider removing if not needed elsewhere.
 import "./App.css";
 import { Link } from "react-router-dom";
-
+import {logoVerde} from './homepage.jsx';
 // Definición del Componente Register
 function Register() {
   return (
@@ -18,7 +18,7 @@ function Register() {
             <div className="flex justify-center mb-6">
               <Link to="/">
                 <img
-                  src="https://files.catbox.moe/6fsyw2.png"
+                  src={logoVerde}
                   alt="Doctoralia Logo"
                   className="h-10"
                 />
@@ -107,12 +107,12 @@ function Register() {
         </div>
         
         {/* Panel Decorativo Derecho */}
-        <div className="hidden lg:flex lg:w-7/12 bg-[#e0f2f1] p-12 items-center justify-center">
+        <div className="hidden lg:flex lg:w-7/12 items-center justify-center">
           {/* Imagen Decorativa */}
           <img
-            src="https://files.catbox.moe/l2rwem.png"
+            src="https://img.freepik.com/free-photo/front-view-male-nurse-hospital_23-2150796810.jpg?t=st=1760576822~exp=1760580422~hmac=4bfac4f06bdcd3e0beb11e20cf39c02de68250329982ff47ff0b7e42403e9955&w=1060"
             alt="Imagen Decorativa"
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-full object-cover"
           />
         </div>
       </section>

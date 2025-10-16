@@ -2,7 +2,7 @@
 import { Search, Phone, Menu } from "lucide-react";
 import "./App.css";
 import { Link } from "react-router-dom";
-
+import {logoVerde} from './homepage.jsx';
 // Definición del Componente Login
 function Login() {
   return (
@@ -11,12 +11,12 @@ function Login() {
       {/* Diseño de la Sección Principal */}
       <section className="flex flex-col lg:flex-row items-stretch min-h-screen w-full">
         {/* Panel Decorativo Izquierdo */}
-        <div className="hidden lg:flex lg:w-7/12 bg-[#e0f2f1] p-12 items-center justify-center">
+        <div className="hidden lg:flex lg:w-7/12 bg-[#e0f2f1] p-0 items-center justify-center">
           {/* Imagen Decorativa */}
           <img
-            src="https://files.catbox.moe/l2rwem.png"
+            src="https://static.vecteezy.com/system/resources/previews/040/993/528/large_2x/ai-generated-portrait-of-a-male-medical-worker-with-a-stethoscope-ai-generated-photo.jpg"
             alt="Imagen Decorativa"
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-full object-cover"
           />
         </div>
 
@@ -28,7 +28,7 @@ function Login() {
             <div className="flex justify-center mb-6">
               <Link to="/">
                 <img
-                  src="https://files.catbox.moe/6fsyw2.png"
+                  src={logoVerde}
                   alt="Doctoralia Logo"
                   className="h-10"
                 />

@@ -1,6 +1,33 @@
-export const heroImg1 = "https://files.catbox.moe/qm7ky2.jpg";
-export const heroImg2 = "https://files.catbox.moe/uv3059.jpg";
-export const heroImg3 = "https://files.catbox.moe/ajr14l.jpg";
+import familyImgURL from './assets/img/contacto/familia.png';
+export const familyImg = familyImgURL;
+
+import heroImg1URL from './assets/img/index/Doctor1.jpg';
+export const heroImg1 = heroImg1URL;
+
+import heroImg2URL from './assets/img/index/Doctor2.jpg';
+export const heroImg2 = heroImg2URL;
+
+import heroImg3URL from './assets/img/index/Doctor3.jpg';
+export const heroImg3 = heroImg3URL;
+
+import Index_EspecialistasURL from './assets/img/index/Index_Especialistas.jpg';
+export const Index_Especialistas = Index_EspecialistasURL;
+
+import Index_AgendaOnlineURL from './assets/img/index/Index_AgendaOnline.jpg';
+export const Index_AgendaOnline = Index_AgendaOnlineURL;
+
+import Index_GestionaSaludURL from './assets/img/index/Index_GestionaSalud.jpg';
+export const Index_GestionaSalud = Index_GestionaSaludURL;
+
+import Index_OpinionesURL from './assets/img/index/Index_Opiniones.jpg';
+export const Index_Opiniones = Index_OpinionesURL;
+
+import Index_TeleconsultaURL from './assets/img/index/Index_Teleconsulta.jpg';
+export const Index_Teleconsulta = Index_TeleconsultaURL;
+
+import Index_SeguridadURL from './assets/img/index/Index_Seguridad.jpg';
+export const Index_Seguridad = Index_SeguridadURL;
+
 export const avatar1 = "https://files.catbox.moe/qm7ky2.jpg";
 export const avatar2 = "https://via.placeholder.com/32/cccccc/888888?text=A2";
 export const avatar3 = "https://via.placeholder.com/32/cccccc/888888?text=A3";
@@ -8,7 +35,15 @@ export const avatar4 = "https://via.placeholder.com/32/cccccc/888888?text=A4";
 export const smileIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Ccircle cx='25' cy='25' r='20' fill='%23FEC160'/%3E%3Cpath d='M15 20 Q 25 35 35 20' stroke='white' stroke-width='3' fill='none'/%3E%3Ccircle cx='18' cy='20' r='3' fill='white'/%3E%3Ccircle cx='32' cy='20' r='3' fill='white'/%3E%3C/svg%3E"; // Simple smiley placeholder
 export const capsuleIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 70'%3E%3Crect x='10' y='25' width='50' height='20' rx='10' fill='%23A9E8E0'/%3E%3C/svg%3E"; // Simple capsule placeholder
 export const waveIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 20'%3E%3Cpath d='M0 10 Q 12.5 0 25 10 T 50 10' stroke='%23FEC160' stroke-width='3' fill='none'/%3E%3C/svg%3E"; // Simple wave placeholder
-export const handMobileSvg = "https://files.catbox.moe/cvpwoo.svg"; // Replace with actual SVG path or component if available
+
+import handMobileSvgURL from './assets/img/index/hand-mobile.svg';
+export const handMobileSvg = handMobileSvgURL;
+
+import logoVerdeURL from './assets/img/logo/Logo_verde.png';
+export const logoVerde = logoVerdeURL;
+
+import logoBlancoSinTextoURL from './assets/img/logo/Logo_Blanco_SinTexto.png';
+export const logoBlancoSinTexto = logoBlancoSinTextoURL;
 
 export const doctorTypes = [
   { title: "Dermatólogo", description: "Tratamiento de Eczema, Pérdida de cabello, Acné, Cáncer de piel y otras afecciones de la piel." },

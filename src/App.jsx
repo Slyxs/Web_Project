@@ -11,6 +11,12 @@ import {
   heroImg1,
   heroImg2,
   heroImg3,
+  Index_Especialistas,
+  Index_AgendaOnline,
+  Index_GestionaSalud,
+  Index_Opiniones,
+  Index_Teleconsulta,
+  Index_Seguridad,
   smileIcon,
   capsuleIcon,
   waveIcon,
@@ -655,7 +661,7 @@ function App() {
                   {/* Contenido Derecho del Hero - Tab: Especialistas (Imagen) */}
                   <div className="lg:w-7/12 mt-8 lg:mt-0">
                     <img
-                      src="https://files.catbox.moe/l572ui.jpg"
+                      src={Index_Especialistas}
                       className="rounded-lg object-cover w-full aspect-[16/10]"
                       alt="Encontrando especialistas en línea"
                     />
@@ -746,7 +752,7 @@ function App() {
                   {/* Contenido Derecho del Hero - Tab: Agenda Online (Imagen) */}
                   <div className="lg:w-7/12 mt-8 lg:mt-0">
                     <img
-                      src="https://files.catbox.moe/j9mrnf.png"
+                      src= {Index_AgendaOnline}
                       className="rounded-lg object-cover w-full aspect-[16/10]"
                       alt="Agendando cita médica online"
                     />
@@ -837,7 +843,7 @@ function App() {
                   {/* Contenido Derecho del Hero - Tab: Gestiona tu Salud (Imagen) */}
                   <div className="lg:w-7/12 mt-8 lg:mt-0">
                     <img
-                      src="https://files.catbox.moe/0r6xm0.png"
+                      src={Index_GestionaSalud}
                       className="rounded-lg object-cover w-full aspect-[16/10]"
                       alt="Gestión digital de la salud"
                     />
@@ -930,7 +936,7 @@ function App() {
                   {/* Contenido Derecho del Hero - Tab: Opiniones (Imagen) */}
                   <div className="lg:w-7/12 mt-8 lg:mt-0">
                     <img
-                      src="https://files.catbox.moe/tm5k7n.jpg"
+                      src={Index_Opiniones}
                       className="rounded-lg object-cover w-full aspect-[16/10]"
                       alt="Leyendo opiniones de pacientes"
                     />
@@ -1021,7 +1027,7 @@ function App() {
                   {/* Contenido Derecho del Hero - Tab: Teleconsulta (Imagen) */}
                   <div className="lg:w-7/12 mt-8 lg:mt-0">
                     <img
-                      src="https://files.catbox.moe/0slepp.png"
+                      src= {Index_Teleconsulta}
                       className="rounded-lg object-cover w-full aspect-[16/10]"
                       alt="Consulta de telemedicina"
                     />
@@ -1112,7 +1118,7 @@ function App() {
                   {/* Contenido Derecho del Hero - Tab: Seguridad (Imagen) */}
                   <div className="lg:w-7/12 mt-8 lg:mt-0">
                     <img
-                      src="https://files.catbox.moe/gza9xa.png"
+                      src={Index_Seguridad}
                       className="rounded-lg object-cover w-full aspect-[16/10]"
                       alt="Seguridad de datos médicos online"
                     />
