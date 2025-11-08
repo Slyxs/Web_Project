@@ -1,5 +1,5 @@
 // Importaciones
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 import { Link } from "react-router-dom";
 import { logoVerde } from "./homepage.jsx";
@@ -12,15 +12,45 @@ function Register() {
     apellidos: "",
     email: "",
     password: "",
+    userType: "paciente",
+    // Campos específicos para doctor
+    numero_licencia: "",
+    especialidad_principal: "",
+    descripcion: "",
+    formacion: ""
   });
 
   const [loading, setLoading] = useState(false);
+  const [especialidades, setEspecialidades] = useState([]);
+
+  // Cargar especialidades al montar el componente
+  useEffect(() => {
+    const fetchEspecialidades = async () => {
+      try {
+        const res = await fetch("http://localhost:3001/api/especialidades");
+        const data = await res.json();
+        setEspecialidades(data);
+      } catch (err) {
+        console.error("Error al cargar especialidades:", err);
+      }
+    };
+    fetchEspecialidades();
+  }, []);
 
   // Manejar cambios de campos
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
+    });
+  };
+
+  // Manejar cambio de tab
+  const handleTabChange = (userType) => {
+    setFormData({
+      ...formData,
+      userType: userType
     });
   };
 
@@ -30,16 +60,43 @@ function Register() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:3001/api/register", {
+      const endpoint = formData.userType === "doctor"
+        ? "http://localhost:3001/api/register-doctor"
+        : "http://localhost:3001/api/register";
+
+      const payload = formData.userType === "doctor"
+        ? {
+            nombres: formData.nombres,
+            apellidos: formData.apellidos,
+            email: formData.email,
+            password: formData.password,
+            numero_licencia: formData.numero_licencia,
+            especialidad_principal: formData.especialidad_principal,
+            descripcion: formData.descripcion,
+            formacion: formData.formacion
+          }
+        : formData;
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       alert(data.message);
       if (res.ok) {
-        setFormData({ nombres: "", apellidos: "", email: "", password: "" });
+        setFormData({
+          nombres: "",
+          apellidos: "",
+          email: "",
+          password: "",
+          userType: "paciente",
+          numero_licencia: "",
+          especialidad_principal: "",
+          descripcion: "",
+          formacion: ""
+        });
       }
     } catch (err) {
       console.error(err);
@@ -74,72 +131,238 @@ function Register() {
               Crear Cuenta
             </h1>
 
-            {/* Formulario de Registro (mismo diseño) */}
+            {/* Formulario de Registro */}
             <form className="mt-6" onSubmit={handleSubmit} aria-busy={loading}>
-              {/* Grupo de Campos Nombres */}
-              <fieldset className="fieldset mt-2">
-                <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Nombres</legend>
-                <input
-                  type="text"
-                  name="nombres"
-                  value={formData.nombres}
-                  onChange={handleChange}
-                  placeholder="John"
-                  autoComplete="given-name"
-                  disabled={loading}
-                  className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
-                  required
-                />
-              </fieldset>
 
-              {/* Grupo de Campos Apellidos */}
-              <fieldset className="fieldset mt-4">
-                <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Apellidos</legend>
+              {/* Tabs para selección de tipo de usuario */}
+              <div className="tabs tabs-box mb-6">
                 <input
-                  type="text"
-                  name="apellidos"
-                  value={formData.apellidos}
-                  onChange={handleChange}
-                  placeholder="Doe"
-                  autoComplete="family-name"
-                  disabled={loading}
-                  className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
-                  required
+                  type="radio"
+                  name="user_tabs"
+                  className="tab"
+                  aria-label="Paciente"
+                  checked={formData.userType === "paciente"}
+                  onChange={() => handleTabChange("paciente")}
                 />
-              </fieldset>
+                <div className="tab-content bg-base-100 border-base-300 p-6">
+                  {/* Formulario Paciente */}
+                  <div className="space-y-4">
+                    {/* Grupo de Campos Nombres */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Nombres</legend>
+                      <input
+                        type="text"
+                        name="nombres"
+                        value={formData.nombres}
+                        onChange={handleChange}
+                        placeholder="John"
+                        autoComplete="given-name"
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      />
+                    </fieldset>
 
-              {/* Grupo de Campos Email */}
-              <fieldset className="fieldset mt-4">
-                <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">E-mail</legend>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="nombre@ejemplo.com"
-                  autoComplete="email"
-                  disabled={loading}
-                  className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
-                  required
-                />
-              </fieldset>
+                    {/* Grupo de Campos Apellidos */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Apellidos</legend>
+                      <input
+                        type="text"
+                        name="apellidos"
+                        value={formData.apellidos}
+                        onChange={handleChange}
+                        placeholder="Doe"
+                        autoComplete="family-name"
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      />
+                    </fieldset>
 
-              {/* Grupo de Campos Contraseña */}
-              <fieldset className="fieldset mt-4">
-                <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Contraseña</legend>
+                    {/* Grupo de Campos Email */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">E-mail</legend>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="nombre@ejemplo.com"
+                        autoComplete="email"
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      />
+                    </fieldset>
+
+                    {/* Grupo de Campos Contraseña */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Contraseña</legend>
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        minLength={6}
+                        autoComplete="new-password"
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      />
+                    </fieldset>
+                  </div>
+                </div>
+
                 <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  minLength={6}
-                  autoComplete="new-password"
-                  disabled={loading}
-                  className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
-                  required
+                  type="radio"
+                  name="user_tabs"
+                  className="tab"
+                  aria-label="Doctor"
+                  checked={formData.userType === "doctor"}
+                  onChange={() => handleTabChange("doctor")}
                 />
-              </fieldset>
+                <div className="tab-content bg-base-100 border-base-300 p-6">
+                  {/* Formulario Doctor */}
+                  <div className="space-y-4">
+                    {/* Grupo de Campos Nombres */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Nombres</legend>
+                      <input
+                        type="text"
+                        name="nombres"
+                        value={formData.nombres}
+                        onChange={handleChange}
+                        placeholder="John"
+                        autoComplete="given-name"
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      />
+                    </fieldset>
+
+                    {/* Grupo de Campos Apellidos */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Apellidos</legend>
+                      <input
+                        type="text"
+                        name="apellidos"
+                        value={formData.apellidos}
+                        onChange={handleChange}
+                        placeholder="Doe"
+                        autoComplete="family-name"
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      />
+                    </fieldset>
+
+                    {/* Grupo de Campos Email */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">E-mail</legend>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="nombre@ejemplo.com"
+                        autoComplete="email"
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      />
+                    </fieldset>
+
+                    {/* Grupo de Campos Contraseña */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Contraseña</legend>
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        minLength={6}
+                        autoComplete="new-password"
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      />
+                    </fieldset>
+
+                    {/* Número de Licencia */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">
+                        Número de Licencia Médica
+                      </legend>
+                      <input
+                        type="text"
+                        name="numero_licencia"
+                        value={formData.numero_licencia}
+                        onChange={handleChange}
+                        placeholder="Ej: LM-123456"
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      />
+                    </fieldset>
+
+                    {/* Especialidad Principal */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">
+                        Especialidad Principal
+                      </legend>
+                      <select
+                        name="especialidad_principal"
+                        value={formData.especialidad_principal}
+                        onChange={handleChange}
+                        disabled={loading}
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
+                        required
+                      >
+                        <option value="">Selecciona una especialidad</option>
+                        {especialidades.map((especialidad) => (
+                          <option key={especialidad.id} value={especialidad.id}>
+                            {especialidad.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </fieldset>
+
+                    {/* Descripción */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">
+                        Descripción Profesional
+                      </legend>
+                      <textarea
+                        name="descripcion"
+                        value={formData.descripcion}
+                        onChange={handleChange}
+                        placeholder="Breve descripción de tu experiencia y especialidades..."
+                        disabled={loading}
+                        rows="3"
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F] resize-none"
+                      />
+                    </fieldset>
+
+                    {/* Formación */}
+                    <fieldset className="fieldset">
+                      <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">
+                        Formación Académica
+                      </legend>
+                      <textarea
+                        name="formacion"
+                        value={formData.formacion}
+                        onChange={handleChange}
+                        placeholder="Títulos universitarios, especializaciones, cursos..."
+                        disabled={loading}
+                        rows="3"
+                        className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F] resize-none"
+                      />
+                    </fieldset>
+                  </div>
+                </div>
+              </div>
 
               {/* Botón de Enviar */}
               <button

@@ -1,13 +1,10 @@
-import express from "express"; // Framework web para Node.js
-import cors from "cors"; // Para permitir solicitudes desde el frontend
-import bodyParser from "body-parser"; // Para parsear JSON, es decir, transformar el cuerpo de las solicitudes en objetos JS
-import mysql from "mysql2"; // MySQL client
-import bcrypt from "bcrypt"; // Para encriptar contraseñas
-import jwt from "jsonwebtoken"; // Para tokens de autenticación
+import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
+import mysql from "mysql2";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-// ================================
-// 🔹 Configuración de conexión MySQL
-// ================================
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -23,17 +20,14 @@ connection.connect((err) => {
   console.log("✅ Conectado a MySQL con éxito");
 });
 
-// ================================
-// 🔹 Configuración del servidor
-// ================================
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const JWT_SECRET = "clave_super_segura_para_jwt"; // ⚠️ cámbiala por una más segura
+const JWT_SECRET = "clave_super_segura_para_jwt";
 
 // ================================
-// 🧩 RUTA: Registrar usuario
+// 🧩 RUTA: Registrar usuario (paciente)
 // ================================
 app.post("/api/register", async (req, res) => {
   const { nombres, apellidos, email, password } = req.body;
@@ -43,10 +37,8 @@ app.post("/api/register", async (req, res) => {
   }
 
   try {
-    // Encriptar contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insertar usuario como "paciente" por defecto
     const query = `
       INSERT INTO usuarios (email, password, nombres, apellidos, tipo)
       VALUES (?, ?, ?, ?, 'paciente')
@@ -61,7 +53,6 @@ app.post("/api/register", async (req, res) => {
           return res.status(500).json({ message: "Error al registrar usuario" });
         }
 
-        // Crear registro en la tabla pacientes
         const nuevoUsuarioId = result.insertId;
         const queryPaciente = "INSERT INTO pacientes (usuario_id) VALUES (?)";
 
@@ -84,7 +75,151 @@ app.post("/api/register", async (req, res) => {
 });
 
 // ================================
-// 🧩 RUTA: Iniciar sesión
+// 🧩 RUTA: Registrar doctor
+// ================================
+app.post("/api/register-doctor", async (req, res) => {
+  const {
+    nombres,
+    apellidos,
+    email,
+    password,
+    numero_licencia,
+    especialidad_principal,
+    descripcion,
+    formacion
+  } = req.body;
+
+  if (!nombres || !apellidos || !email || !password || !numero_licencia || !especialidad_principal) {
+    return res.status(400).json({ message: "Faltan campos obligatorios" });
+  }
+
+  try {
+    // Verificar si el email ya existe
+    const checkEmailQuery = "SELECT id FROM usuarios WHERE email = ?";
+    connection.query(checkEmailQuery, [email], async (emailErr, emailResults) => {
+      if (emailErr) {
+        console.error("❌ Error al verificar email:", emailErr);
+        return res.status(500).json({ message: "Error al verificar email" });
+      }
+
+      if (emailResults.length > 0) {
+        return res.status(400).json({ message: "El email ya está registrado" });
+      }
+
+      // Verificar si el número de licencia ya existe
+      const checkLicenseQuery = "SELECT id FROM doctores WHERE numero_licencia = ?";
+      connection.query(checkLicenseQuery, [numero_licencia], async (licenseErr, licenseResults) => {
+        if (licenseErr) {
+          console.error("❌ Error al verificar licencia:", licenseErr);
+          return res.status(500).json({ message: "Error al verificar número de licencia" });
+        }
+
+        if (licenseResults.length > 0) {
+          return res.status(400).json({ message: "El número de licencia ya está registrado" });
+        }
+
+        // Encriptar contraseña
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Insertar usuario como "doctor"
+        const insertUserQuery = `
+          INSERT INTO usuarios (email, password, nombres, apellidos, tipo)
+          VALUES (?, ?, ?, ?, 'doctor')
+        `;
+
+        connection.query(
+          insertUserQuery,
+          [email, hashedPassword, nombres, apellidos],
+          (userErr, userResult) => {
+            if (userErr) {
+              console.error("❌ Error al insertar usuario:", userErr);
+              return res.status(500).json({ message: "Error al registrar usuario" });
+            }
+
+            const nuevoUsuarioId = userResult.insertId;
+
+            // Insertar en tabla doctores
+            const insertDoctorQuery = `
+              INSERT INTO doctores (usuario_id, numero_licencia, descripcion, formacion)
+              VALUES (?, ?, ?, ?)
+            `;
+
+            connection.query(
+              insertDoctorQuery,
+              [nuevoUsuarioId, numero_licencia, descripcion || null, formacion || null],
+              (doctorErr, doctorResult) => {
+                if (doctorErr) {
+                  console.error("❌ Error al insertar doctor:", doctorErr);
+                  return res.status(500).json({ message: "Error al registrar información del doctor" });
+                }
+
+                const nuevoDoctorId = doctorResult.insertId;
+
+                // Insertar especialidad principal
+                const insertSpecialtyQuery = `
+                  INSERT INTO doctor_especialidad (doctor_id, especialidad_id, es_principal)
+                  VALUES (?, ?, 1)
+                `;
+
+                connection.query(
+                  insertSpecialtyQuery,
+                  [nuevoDoctorId, especialidad_principal],
+                  (specialtyErr) => {
+                    if (specialtyErr) {
+                      console.error("❌ Error al insertar especialidad:", specialtyErr);
+                      return res.status(500).json({ message: "Error al registrar especialidad" });
+                    }
+
+                    // Insertar en verificaciones_doctor
+                    const insertVerificationQuery = `
+                      INSERT INTO verificaciones_doctor (doctor_id, estado)
+                      VALUES (?, 'pendiente')
+                    `;
+
+                    connection.query(
+                      insertVerificationQuery,
+                      [nuevoDoctorId],
+                      (verificationErr) => {
+                        if (verificationErr) {
+                          console.error("❌ Error al insertar verificación:", verificationErr);
+                          return res.status(500).json({ message: "Error al crear registro de verificación" });
+                        }
+
+                        res.status(200).json({ message: "✅ Doctor registrado con éxito. Pendiente de verificación." });
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          }
+        );
+      });
+    });
+  } catch (error) {
+    console.error("❌ Error en registro de doctor:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+
+// ================================
+// 🧩 RUTA: Obtener especialidades
+// ================================
+app.get("/api/especialidades", (req, res) => {
+  const query = "SELECT id, nombre FROM especialidades ORDER BY nombre";
+
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error("❌ Error al obtener especialidades:", err);
+      return res.status(500).json({ message: "Error al obtener especialidades" });
+    }
+
+    res.json(results);
+  });
+});
+
+// ================================
+// 🧩 RUTA: Iniciar sesión (CORREGIDA)
 // ================================
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
@@ -104,12 +239,15 @@ app.post("/api/login", (req, res) => {
 
     const user = results[0];
 
-    // Verificar contraseña
+    // ✅ VERIFICACIÓN DE SUSPENSIÓN (nueva columna)
+    if (user.suspendido === 1) {
+      return res.status(401).json({ message: "Cuenta suspendida. Contacte al administrador." });
+    }
+
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword)
       return res.status(401).json({ message: "Contraseña incorrecta" });
 
-    // Generar token JWT
     const token = jwt.sign(
       { id: user.id, email: user.email, tipo: user.tipo },
       JWT_SECRET,
@@ -129,6 +267,7 @@ app.post("/api/login", (req, res) => {
     });
   });
 });
+
 
 // ================================
 // 🧩 RUTA: Enviar mensaje de contacto
