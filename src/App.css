@@ -3,13 +3,3 @@
 
 @import "tailwindcss";
 @plugin "daisyui";
-
-/* Simple fade-in animation for mobile menu */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}

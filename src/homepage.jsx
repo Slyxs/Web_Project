@@ -28,10 +28,6 @@ export const Index_Teleconsulta = Index_TeleconsultaURL;
 import Index_SeguridadURL from './assets/img/index/Index_Seguridad.jpg';
 export const Index_Seguridad = Index_SeguridadURL;
 
-export const avatar1 = "https://files.catbox.moe/qm7ky2.jpg";
-export const avatar2 = "https://via.placeholder.com/32/cccccc/888888?text=A2";
-export const avatar3 = "https://via.placeholder.com/32/cccccc/888888?text=A3";
-export const avatar4 = "https://via.placeholder.com/32/cccccc/888888?text=A4";
 export const smileIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Ccircle cx='25' cy='25' r='20' fill='%23FEC160'/%3E%3Cpath d='M15 20 Q 25 35 35 20' stroke='white' stroke-width='3' fill='none'/%3E%3Ccircle cx='18' cy='20' r='3' fill='white'/%3E%3Ccircle cx='32' cy='20' r='3' fill='white'/%3E%3C/svg%3E"; // Simple smiley placeholder
 export const capsuleIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 70'%3E%3Crect x='10' y='25' width='50' height='20' rx='10' fill='%23A9E8E0'/%3E%3C/svg%3E"; // Simple capsule placeholder
 export const waveIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 20'%3E%3Cpath d='M0 10 Q 12.5 0 25 10 T 50 10' stroke='%23FEC160' stroke-width='3' fill='none'/%3E%3C/svg%3E"; // Simple wave placeholder

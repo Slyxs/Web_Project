@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctoralia</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> <!-- Already present -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <style type="text/tailwindcss">
+        @tailwind base;
+        @tailwind components;
+        @tailwind utilities;
+        body {
+            font-family: 'Rubik', sans-serif; /* Default font */
+        }
+        .font-dm-sans {
+            font-family: 'DM Sans', sans-serif;
+        }
+        /* Custom scrollbar for tabs if needed, Tailwind plugin might be better for production */
+        .scrollbar-thin {
+            scrollbar-width: thin;
+            scrollbar-color: #A9E8E0 transparent; /* thumb track */
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #A9E8E0;
+            border-radius: 10px;
+            border: 3px solid transparent;
+        }
+    </style>
+</head>
+<body>
+    <!-- Using arbitrary values for the gradient to match the demo's linear-gradient -->
+    <div class="min-h-screen bg-[linear-gradient(90deg,_rgba(34,193,195,0.06),_rgba(253,187,45,0.1))] font-['Rubik'] text-[#0A3C3F]">
+      <!-- New Navbar Structure -->
+      <div class="pt-4 md:pt-6 lg:pt-8">
+        <div class="container mx-auto px-4 max-w-7xl">
+          <div class="navbar bg-[#0A3C3F] text-white rounded-lg shadow-md px-6 lg:px-8 py-3">
+            <div class="navbar-start">
+              <!-- Logo -->
+              <a href="#" class="text-4xl font-bold font-['DM_Sans'] tracking-tight">
+                Doctoralia
+              </a>
+            </div>
+
+            <div class="navbar-center hidden lg:flex">
+              <ul class="menu menu-horizontal px-1">
+                <li>
+                  <a href="/" class="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">
+                    Home
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">
+                    Doctors
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">
+                    Services
+                  </a>
+                </li>
+                <li>
+                  <a href="/contacto" class="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">
+                    Contact
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div class="navbar-end">
+              <!-- Desktop Search & Button -->
+              <div class="hidden lg:flex items-center space-x-4">
+                <button class="text-white hover:text-[#A9E8E0] p-2">
+                  <!-- Search Icon (placeholder) -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+                <a
+                  href="#"
+                  class="button rounded border border-white text-white px-5 py-2 text-base hover:bg-white hover:text-[#0A3C3F] transition-colors duration-300 flex items-center"
+                >
+                  <!-- Phone Icon (placeholder) -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                  <span class="inline ml-2">+01 4424 579</span>
+                </a>
+              </div>
+
+              <!-- Mobile Menu Dropdown -->
+              <div class="dropdown dropdown-end lg:hidden">
+                <button tabindex="0" role="button" class="btn btn-ghost hover:bg-transparent text-white p-1">
+                  <!-- Menu Icon (placeholder) -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <ul
+                  tabindex="0"
+                  class="menu menu-sm dropdown-content bg-[#0A3C3F] text-white rounded-box z-[50] mt-3 w-64 p-4 shadow-lg"
+                >
+                  <li><a href="/" class="hover:text-[#A9E8E0] text-lg py-2">Home</a></li>
+                  <li><a href="#" class="hover:text-[#A9E8E0] text-lg py-2">Doctors</a></li>
+                  <li><a href="#" class="hover:text-[#A9E8E0] text-lg py-2">Services</a></li>
+                  <li><a href="/contacto" class="hover:text-[#A9E8E0] text-lg py-2">Contact</a></li>
+                  
+                  <div class="pt-3 mt-3 border-t border-gray-700">
+                    <li class="py-1">
+                      <a href="#" class="hover:text-[#A9E8E0] flex items-center text-lg p-2">
+                        <!-- Search Icon (placeholder) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                         Search
+                      </a>
+                    </li>
+                    <li class="mt-2">
+                      <a
+                        href="#"
+                        class="button rounded border border-white text-white px-5 py-2 text-base hover:bg-white hover:text-[#0A3C3F] transition-colors duration-300 flex items-center justify-center w-full"
+                      >
+                        <!-- Phone Icon (placeholder) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        +01 4424 579
+                      </a>
+                    </li>
+                  </div>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Section -->
+      <main class="pt-0 hero">
+        <div class="hero-content mx-auto px-4 max-w-7xl flex flex-col lg:flex-row justify-between items-center gap-8 lg:gap-16 py-10 lg:py-16 xl:py-20">
+          <!-- Left Content -->
+          <div class="lg:w-5/12 text-center lg:text-left relative">
+            <h1 class="text-4xl sm:text-5xl lg:text-[3.2rem] xl:text-6xl font-bold font-['DM_Sans'] text-[#0A3C3F] mt-2 mb-6 leading-tight lg:leading-snug">
+              Tu salud nuestra <span class="bg-[#A9E8E0] px-2 pb-1 rounded">misión</span>,
+              tu bienestar nuestra prioridad.
+            </h1>
+            <p class="text-lg text-[#0A3C3F] opacity-80 mb-8">
+              Encuentra a tu especialista y agenda tu cita fácilmente.
+            </p>
+            <a
+              href="#"
+              class="inline-flex items-center bg-[#A9E8E0] text-[#0A3C3F] font-semibold py-3 px-6 rounded hover:bg-[#0A3C3F] hover:text-white transition-colors duration-300"
+            >
+              Solicitar una Cita <span class="ml-2">&rarr;</span>
+            </a>
+          </div>
+
+          <!-- Right Content (Images & Card) -->
+          <div class="lg:w-6/12 relative mt-10 lg:mt-0">
+            <img
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 70'%3E%3Crect x='10' y='25' width='50' height='20' rx='10' fill='%23A9E8E0'/%3E%3C/svg%3E" 
+              alt="capsule"
+              class="absolute z-0 -top-4 -left-16 mt-3 opacity-10 w-16 hidden lg:block"
+            />
+            <div class="grid grid-cols-2 gap-4 items-center">
+              <div class="relative">
+                <img
+                  src="https://files.catbox.moe/ajr14l.jpg" 
+                  alt="Doctor Main"
+                  class="rounded-lg shadow-lg w-full"
+                />
+              </div>
+              <div class="space-y-4">
+                <img
+                  src="https://files.catbox.moe/uv3059.jpg"
+                  alt="Doctor Side 1"
+                  class="rounded-lg shadow-lg w-full"
+                />
+                <img
+                  src="https://files.catbox.moe/qm7ky2.jpg"
+                  alt="Doctor Side 2"
+                  class="rounded-lg shadow-lg w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Search Section -->
+      <div
+        id="section-search"
+        class="pt-16 pb-10 lg:pt-24 lg:pb-16 xl:pt-28 xl:pb-24 bg-white"
+      >
+        <div class="container mx-auto px-4 max-w-7xl">
+          <div class="mb-8">
+            <h2 class="text-4xl sm:text-5xl lg:text-[3.2rem] xl:text-5xl font-bold font-['DM_Sans'] text-[#0A3C3F] leading-tight lg:leading-snug">
+              Book the local{" "}
+              <span class="bg-[#A9E8E0] px-2 pb-1 rounded">Doctors</span>
+              <br />
+              who take your Care.
+            </h2>
+          </div>
+          <div class="relative">
+            <img
+              src="https://files.catbox.moe/cvpwoo.svg" 
+              alt="Mobile Booking"
+              class="absolute right-4 bottom-full z-10 hidden md:block pointer-events-none h-48 md:h-46 lg:h-64"
+            />
+            <div class="join w-full bg-white rounded-lg border-[3px] border-[#0A3C3F] border-opacity-20 shadow-sm flex flex-col lg:flex-row">
+              <div class="join-item flex items-center p-3 lg:p-4 flex-grow border-b border-[#0A3C3F] border-opacity-10 lg:border-r lg:border-b-0 min-w-0">
+                <!-- Search Icon (placeholder) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#0A3C3F] opacity-70 mr-3 flex-shrink-0"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <select
+                  class="select select-ghost w-full focus:outline-none text-[#0A3C3F] cursor-pointer min-w-0"
+                  
+                >
+                  <option
+                    value=""
+                    disabled
+                    selected
+                    class="text-[#0A3C3F] opacity-60"
+                  >
+                    Especialidad
+                  </option>
+                  <option value="Dermatólogo">Dermatólogo</option>
+                  <option value="Médico general">Médico general</option>
+                  <option value="Pediatra">Pediatra</option>
+                  <!-- Add other options as needed -->
+                </select>
+              </div>
+              <div class="join-item flex items-center p-3 lg:p-4 flex-grow border-b border-[#0A3C3F] border-opacity-10 lg:border-r lg:border-b-0 min-w-0">
+                <!-- MapPin Icon (placeholder) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#0A3C3F] opacity-70 mr-3 flex-shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <select
+                  class="select select-ghost w-full focus:outline-none text-[#0A3C3F] cursor-pointer min-w-0"
+                >
+                  <option
+                    value=""
+                    disabled
+                    selected
+                    class="text-[#0A3C3F] opacity-60"
+                  >
+                    Ciudad
+                  </option>
+                  <option value="Lima">Lima</option>
+                  <option value="Arequipa">Arequipa</option>
+                  <!-- Add other options as needed -->
+                </select>
+              </div>
+              <div class="join-item flex items-center p-3 lg:p-4 flex-grow border-b border-[#0A3C3F] border-opacity-10 lg:border-b-0 min-w-0">
+                <!-- ClipboardList Icon (placeholder) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#0A3C3F] opacity-70 mr-3 flex-shrink-0"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                <select
+                  class="select select-ghost w-full focus:outline-none text-[#0A3C3F] cursor-pointer min-w-0"
+                >
+                  <option
+                    value=""
+                    disabled
+                    selected
+                    class="text-[#0A3C3F] opacity-60"
+                  >
+                    Sintomas
+                  </option>
+                  <option value="Asma">Asma</option>
+                  <option value="Sarpullido">Sarpullido</option>
+                  <!-- Add other options as needed -->
+                </select>
+              </div>
+              <div class="join-item">
+                <button class="btn join-item w-full lg:h-full bg-[#A9E8E0] text-[#0A3C3F] font-semibold py-3 lg:py-4 px-6 lg:px-8 rounded-b-md lg:rounded-l-none lg:rounded-r-md hover:bg-[#0A3C3F] hover:text-white transition-colors duration-300 flex items-center justify-center text-lg border-none">
+                  Find Doctors
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Doctor Types Section -->
+      <div class="py-14 sm:py-14 md:py-16 lg:py-16 xl:py-20 bg-[#fdf8eb]">
+        <div class="container mx-auto px-4 max-w-7xl">
+          <div class="text-center mb-12 lg:mb-16">
+            <h2 class="text-4xl sm:text-5xl font-bold font-['DM_Sans'] text-[#0A3C3F] mb-3">
+              We take your Health Seriously
+            </h2>
+            <p class="text-lg text-[#0A3C3F] opacity-80 max-w-2xl mx-auto">
+              Explore our wide range of specialized medical services.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 lg:gap-8">
+            <!-- Doctor Type Card 1: Dermatólogo -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Dermatólogo
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Eczema, Pérdida de cabello, Acné, Cáncer de piel..
+                </p>
+              </div>
+            </a>
+            <!-- Doctor Type Card 2: Neurólogo -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Neurólogo
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Trastornos neuromusculares, TDA, tumores cerebrales..
+                </p>
+              </div>
+            </a>
+            <!-- Doctor Type Card 3: Radiólogo -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Radiólogo
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Cánceres o tumores. Bloqueos en sus arterias o venas.
+                </p>
+              </div>
+            </a>
+            <!-- Doctor Type Card 4: Patólogo -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Patólogo
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Trastornos de sangrado, problemas de coagulación y anemia.
+                </p>
+              </div>
+            </a>
+            <!-- Doctor Type Card 5: Neumólogo -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Neumólogo
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Asma y enfermedad pulmonar obstructiva crónica (EPOC).
+                </p>
+              </div>
+            </a>
+            <!-- Doctor Type Card 6: Dermatólogo (Acné) -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Dermatólogo
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Acné, folículos bloqueados que conducen a la acumulación de aceite, bacterias y piel muerta en sus poros.
+                </p>
+              </div>
+            </a>
+            <!-- Doctor Type Card 7: Psiquiatra -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Psiquiatra
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Depresión, trastorno bipolar y otros trastornos del estado de ánimo. Trastornos alimenticios.
+                </p>
+              </div>
+            </a>
+            <!-- Doctor Type Card 8: Cardiólogo -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Cardiólogo
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Aterosclerosis, Presión arterial alta, Colesterol alto, Insuficiencia cardíaca..
+                </p>
+              </div>
+            </a>
+            <!-- Doctor Type Card 9: Ortopedista -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Ortopedista
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Fracturas, Lesiones de ligamentos de la articulación de la rodilla, Daño en la articulación de la rodilla debido a diferentes causas de artritis.
+                </p>
+              </div>
+            </a>
+            <!-- Doctor Type Card 10: Gastroenterólogo -->
+            <a href="#" class="group card bg-white border border-gray-200/80 rounded-xl transition-all duration-300 ease-in-out hover:bg-[#0A3C3F] hover:border-[#0A3C3F] transform hover:-translate-y-1">
+              <div class="card-body items-center text-center px-5 py-6 md:px-6 md:py-8">
+                <h4 class="card-title text-lg md:text-xl font-semibold text-[#0A3C3F] mb-1 group-hover:text-white">
+                  Gastroenterólogo
+                </h4>
+                <p class="text-xs md:text-sm text-[#0A3C3F] opacity-70 group-hover:text-gray-200 group-hover:opacity-90 overflow-hidden line-clamp-3">
+                  Estreñimiento, Enfermedad de Crohn, Diarrea, Vómitos en niños, Gastritis..
+                </p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección de departamentos especializados -->
+      <div class="py-16 lg:py-20 bg-white">
+        <div class="container mx-auto px-4 md:px-6 max-w-7xl">
+          <div class="text-center mb-4 lg:mb-5">
+            <h2 class="text-4xl sm:text-5xl font-bold font-['DM_Sans'] text-[#0A3C3F]">
+              Descubre Cómo Te Ayudamos
+            </h2>
+            <p class="py-4 text-lg text-[#0A3C3F] opacity-80 max-w-3xl mx-auto">
+              Nuestra plataforma está diseñada para simplificar tu acceso a la
+              salud, conectándote con los mejores especialistas de forma rápida
+              y segura.
+            </p>
+          </div>
+
+          <div class="tabs justify-center overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#A9E8E0] scrollbar-track-transparent flex flex-wrap gap-2 mb-6">
+            <input
+              type="radio"
+              name="department_tabs"
+              role="tab"
+              class="tab appearance-none cursor-pointer rounded-md px-5 py-2.5 text-sm sm:text-base font-semibold font-['DM_Sans'] transition-all duration-200 ease-in-out focus:outline-none bg-[#D0EFEB] text-[#0A3C3F] hover:bg-[#B8E0D8] checked:bg-[#0A3C3F] checked:text-white"
+              aria-label="Especialistas"
+              checked
+            />
+            <div
+              role="tabpanel"
+              class="tab-content bg-white rounded-b-lg rounded-tr-lg p-6 md:p-8 lg:p-10 -mt-px w-full" 
+            >
+              <div class="hero">
+                <div class="hero-content flex-col lg:flex-row lg:gap-12 xl:gap-16 items-start w-full">
+                  <div class="lg:w-5/12">
+                    <h3 class="text-3xl lg:text-4xl font-['DM_Sans'] text-gray-700 mb-5 leading-tight">
+                      Encuentra Especialistas <br />
+                      <span class="font-semibold">Cerca de Ti</span>
+                    </h3>
+                    <p class="text-base lg:text-lg text-gray-700 opacity-80 mb-6">
+                      Navega por una amplia red de profesionales de la salud y
+                      filtra por especialidad, ubicación y seguro médico para
+                      hallar al doctor perfecto para tus necesidades.
+                    </p>
+                    <hr class="my-6 border-t border-gray-200 w-full" />
+                    <ul class="space-y-3">
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="white"
+                            stroke-width="3"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90">
+                          <strong class="text-[#0A3C3F]">
+                            Amplia Red de Médicos:
+                          </strong>{" "}
+                          Accede a perfiles detallados de doctores y
+                          especialistas.
+                        </p>
+                      </li>
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="white"
+                            stroke-width="3"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90">
+                          <strong class="text-[#0A3C3F]">
+                            Filtros Inteligentes:
+                          </strong>{" "}
+                          Busca por especialidad, seguro, ubicación y más.
+                        </p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="lg:w-7/12 mt-8 lg:mt-0">
+                    <img
+                      src="https://files.catbox.moe/l572ui.jpg"
+                      class="rounded-lg object-cover w-full aspect-[16/10]"
+                      alt="Encontrando especialistas en línea"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <input
+              type="radio"
+              name="department_tabs"
+              role="tab"
+              class="tab appearance-none cursor-pointer rounded-md px-5 py-2.5 text-sm sm:text-base font-semibold font-['DM_Sans'] transition-all duration-200 ease-in-out focus:outline-none bg-[#D0EFEB] text-[#0A3C3F] hover:bg-[#B8E0D8] checked:bg-[#0A3C3F] checked:text-white"
+              aria-label="Agenda Online"
+            />
+            <div
+              role="tabpanel"
+              class="tab-content bg-white rounded-b-lg rounded-tr-lg p-6 md:p-8 lg:p-10 -mt-px w-full"
+            >
+              <div class="hero">
+                <div class="hero-content flex-col lg:flex-row lg:gap-12 xl:gap-16 items-start w-full">
+                  <div class="lg:w-5/12">
+                    <h3 class="text-3xl lg:text-4xl font-['DM_Sans'] text-gray-700 mb-5 leading-tight">
+                      Agenda Citas Online <br />
+                      <span class="font-semibold">Sin Complicaciones</span>
+                    </h3>
+                    <p class="text-base lg:text-lg text-gray-700 opacity-80 mb-6">
+                      Olvídate de las llamadas telefónicas. Revisa la
+                      disponibilidad en tiempo real y reserva tu cita médica en
+                      cualquier momento y desde cualquier lugar.
+                    </p>
+                    <hr class="my-6 border-t border-gray-200 w-full" />
+                    <ul class="space-y-3">
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Disponibilidad 24/7:</strong> Reserva citas cuando mejor te convenga.</p>
+                      </li>
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Confirmación Instantánea:</strong> Recibe notificaciones y recordatorios.</p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="lg:w-7/12 mt-8 lg:mt-0">
+                    <img src="https://files.catbox.moe/j9mrnf.png" class="rounded-lg object-cover w-full aspect-[16/10]" alt="Agendando cita médica online"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <input
+              type="radio"
+              name="department_tabs"
+              role="tab"
+              class="tab appearance-none cursor-pointer rounded-md px-5 py-2.5 text-sm sm:text-base font-semibold font-['DM_Sans'] transition-all duration-200 ease-in-out focus:outline-none bg-[#D0EFEB] text-[#0A3C3F] hover:bg-[#B8E0D8] checked:bg-[#0A3C3F] checked:text-white"
+              aria-label="Gestiona tu Salud"
+            />
+            <div
+              role="tabpanel"
+              class="tab-content bg-white rounded-b-lg rounded-tr-lg p-6 md:p-8 lg:p-10 -mt-px w-full"
+            >
+              <div class="hero">
+                <div class="hero-content flex-col lg:flex-row lg:gap-12 xl:gap-16 items-start w-full">
+                  <div class="lg:w-5/12">
+                    <h3 class="text-3xl lg:text-4xl font-['DM_Sans'] text-gray-700 mb-5 leading-tight">
+                      Gestiona Tu Salud <br />
+                      <span class="font-semibold">De Forma Digital</span>
+                    </h3>
+                    <p class="text-base lg:text-lg text-gray-700 opacity-80 mb-6">
+                      Accede a tu historial de citas, recibe recordatorios y
+                      prepárate para tus consultas, todo desde la comodidad de
+                      nuestra plataforma intuitiva.
+                    </p>
+                    <hr class="my-6 border-t border-gray-200 w-full" />
+                    <ul class="space-y-3">
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Historial Centralizado:</strong> Todas tus citas y médicos en un solo lugar.</p>
+                      </li>
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Recordatorios Útiles:</strong> No olvides ninguna cita importante.</p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="lg:w-7/12 mt-8 lg:mt-0">
+                    <img src="https://files.catbox.moe/0r6xm0.png" class="rounded-lg object-cover w-full aspect-[16/10]" alt="Gestión digital de la salud"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <input
+              type="radio"
+              name="department_tabs"
+              role="tab"
+              class="tab appearance-none cursor-pointer rounded-md px-5 py-2.5 text-sm sm:text-base font-semibold font-['DM_Sans'] transition-all duration-200 ease-in-out focus:outline-none bg-[#D0EFEB] text-[#0A3C3F] hover:bg-[#B8E0D8] checked:bg-[#0A3C3F] checked:text-white"
+              aria-label="Opiniones"
+            />
+            <div
+              role="tabpanel"
+              class="tab-content bg-white rounded-b-lg rounded-tr-lg p-6 md:p-8 lg:p-10 -mt-px w-full"
+            >
+              <div class="hero">
+                <div class="hero-content flex-col lg:flex-row lg:gap-12 xl:gap-16 items-start w-full">
+                  <div class="lg:w-5/12">
+                    <h3 class="text-3xl lg:text-4xl font-['DM_Sans'] text-gray-700 mb-5 leading-tight">
+                      Opiniones Reales <br />
+                      <span class="font-semibold">Para Decisiones Informadas</span>
+                    </h3>
+                    <p class="text-base lg:text-lg text-gray-700 opacity-80 mb-6">
+                      Lee valoraciones de otros pacientes para tomar decisiones
+                      con confianza y elige al especialista que mejor se adapte
+                      a ti.
+                    </p>
+                    <hr class="my-6 border-t border-gray-200 w-full" />
+                    <ul class="space-y-3">
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Comunidad Confiable:</strong> Experiencias compartidas por otros pacientes.</p>
+                      </li>
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Transparencia Total:</strong> Calificaciones y comentarios verificados.</p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="lg:w-7/12 mt-8 lg:mt-0">
+                    <img src="https://files.catbox.moe/948f0u.jpg" class="rounded-lg object-cover w-full aspect-[16/10]" alt="Leyendo opiniones de pacientes"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <input
+              type="radio"
+              name="department_tabs"
+              role="tab"
+              class="tab appearance-none cursor-pointer rounded-md px-5 py-2.5 text-sm sm:text-base font-semibold font-['DM_Sans'] transition-all duration-200 ease-in-out focus:outline-none bg-[#D0EFEB] text-[#0A3C3F] hover:bg-[#B8E0D8] checked:bg-[#0A3C3F] checked:text-white"
+              aria-label="Teleconsulta"
+            />
+            <div
+              role="tabpanel"
+              class="tab-content bg-white rounded-b-lg rounded-tr-lg p-6 md:p-8 lg:p-10 -mt-px w-full"
+            >
+              <div class="hero">
+                <div class="hero-content flex-col lg:flex-row lg:gap-12 xl:gap-16 items-start w-full">
+                  <div class="lg:w-5/12">
+                    <h3 class="text-3xl lg:text-4xl font-['DM_Sans'] text-gray-700 mb-5 leading-tight">
+                      Consultas Virtuales <br />
+                      <span class="font-semibold">Salud Sin Barreras</span>
+                    </h3>
+                    <p class="text-base lg:text-lg text-gray-700 opacity-80 mb-6">
+                      Conéctate con especialistas a través de videollamadas
+                      seguras para consultas de seguimiento o primeras
+                      valoraciones, ahorrando tiempo y desplazamientos.
+                    </p>
+                    <hr class="my-6 border-t border-gray-200 w-full" />
+                    <ul class="space-y-3">
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Acceso Remoto:</strong> Atención médica desde donde estés.</p>
+                      </li>
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Comodidad y Ahorro:</strong> Reduce tiempos y costos de traslado.</p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="lg:w-7/12 mt-8 lg:mt-0">
+                    <img src="https://files.catbox.moe/q0j3u3.jpg" class="rounded-lg object-cover w-full aspect-[16/10]" alt="Consulta de telemedicina"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <input
+              type="radio"
+              name="department_tabs"
+              role="tab"
+              class="tab appearance-none cursor-pointer rounded-md px-5 py-2.5 text-sm sm:text-base font-semibold font-['DM_Sans'] transition-all duration-200 ease-in-out focus:outline-none bg-[#D0EFEB] text-[#0A3C3F] hover:bg-[#B8E0D8] checked:bg-[#0A3C3F] checked:text-white"
+              aria-label="Seguridad"
+            />
+            <div
+              role="tabpanel"
+              class="tab-content bg-white rounded-b-lg rounded-tr-lg p-6 md:p-8 lg:p-10 -mt-px w-full"
+            >
+              <div class="hero">
+                <div class="hero-content flex-col lg:flex-row lg:gap-12 xl:gap-16 items-start w-full">
+                  <div class="lg:w-5/12">
+                    <h3 class="text-3xl lg:text-4xl font-['DM_Sans'] text-gray-700 mb-5 leading-tight">
+                      Tu Información <br />
+                      <span class="font-semibold">Segura y Protegida</span>
+                    </h3>
+                    <p class="text-base lg:text-lg text-gray-700 opacity-80 mb-6">
+                      Priorizamos la seguridad de tus datos médicos. Nuestra
+                      plataforma cumple con los más altos estándares de
+                      privacidad y protección de la información.
+                    </p>
+                    <hr class="my-6 border-t border-gray-200 w-full" />
+                    <ul class="space-y-3">
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Protección de Datos:</strong> Cumplimiento de normativas de privacidad.</p>
+                      </li>
+                      <li class="flex items-start">
+                        <span class="mr-3 mt-1 flex-shrink-0 p-1 bg-[#FEC160] rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm lg:text-base text-gray-700 opacity-90"><strong class="text-[#0A3C3F]">Confidencialidad Garantizada:</strong> Tu información médica resguardada.</p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="lg:w-7/12 mt-8 lg:mt-0">
+                    <img src="https://files.catbox.moe/8a7v8e.jpg" class="rounded-lg object-cover w-full aspect-[16/10]" alt="Seguridad de datos médicos online"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="bg-[#0A3C3F]">
+        <footer class="footer sm:footer-horizontal bg-[#0A3C3F] text-white px-10 py-15 max-w-7xl mx-auto">
+          <aside>
+            <svg
+              width="70"
+              height="70"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              class="fill-current"
+            >
+              <path d="M22.672 15.226l-2.432.811.841 2.515c.33 1.019-.209 2.127-1.23 2.456-1.15.325-2.148-.321-2.463-1.226l-.84-2.518-5.013 1.677.84 2.517c.391 1.203-.434 2.542-1.831 2.542-.88 0-1.601-.564-1.86-1.314l-.842-2.516-2.431.809c-1.135.328-2.145-.317-2.463-1.229-.329-1.018.211-2.127 1.231-2.456l2.432-.809-1.621-4.823-2.432.808c-1.355.384-2.558-.59-2.558-1.839 0-.817.509-1.582 1.327-1.846l2.433-.809-.842-2.515c-.33-1.02.211-2.129 1.232-2.458 1.02-.329 2.13.209 2.461 1.229l.842 2.515 5.011-1.677-.839-2.517c-.403-1.238.484-2.553 1.843-2.553.819 0 1.585.509 1.85 1.326l.841 2.517 2.431-.81c1.02-.33 2.131.211 2.461 1.229.332 1.018-.21 2.126-1.23 2.456l-2.433.809 1.622 4.823 2.433-.809c1.242-.401 2.557.484 2.557 1.838 0 .819-.51 1.583-1.328 1.847m-8.992-6.428l-5.01 1.675 1.619 4.828 5.011-1.674-1.62-4.829z"></path>
+            </svg>
+            <p class="text-lg font-['DM_Sans']">
+              ACME Industries Ltd.
+              <br />
+              Providing reliable tech since 1992
+            </p>
+          </aside>
+          <nav>
+            <h6 class="footer-title text-lg font-['DM_Sans']">
+              Services
+            </h6>
+            <a class="link link-hover text-base font-['DM_Sans']">Branding</a>
+            <a class="link link-hover text-base font-['DM_Sans']">Design</a>
+            <a class="link link-hover text-base font-['DM_Sans']">Marketing</a>
+            <a class="link link-hover text-base font-['DM_Sans']">Advertisement</a>
+          </nav>
+          <nav>
+            <h6 class="footer-title text-lg font-['DM_Sans']">
+              Company
+            </h6>
+            <a class="link link-hover text-base font-['DM_Sans']">About us</a>
+            <a class="link link-hover text-base font-['DM_Sans']">Contact</a>
+            <a class="link link-hover text-base font-['DM_Sans']">Jobs</a>
+            <a class="link link-hover text-base font-['DM_Sans']">Press kit</a>
+          </nav>
+          <nav>
+            <h6 class="footer-title text-lg font-['DM_Sans']">
+              Legal
+            </h6>
+            <a class="link link-hover text-base font-['DM_Sans']">Terms of use</a>
+            <a class="link link-hover text-base font-['DM_Sans']">Privacy policy</a>
+            <a class="link link-hover text-base font-['DM_Sans']">Cookie policy</a>
+          </nav>
+        </footer>
+      </div>
+    </div>
+</body>
+</html>

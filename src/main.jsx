@@ -5,6 +5,10 @@ import App from './App.jsx';
 import Contacto from './Contacto.jsx';
 import Login from './Login.jsx';
 import Register from './Register.jsx';
+import Perfil from './Perfil.jsx';
+
+// Para testeos
+import AppCOPIA from './App copy.jsx';
 import './App.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -15,6 +19,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/contacto" element={<Contacto />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/perfil" element={<Perfil />} />
+        {/* Rutas de prueba */}
+        <Route path="/appcopy" element={<AppCOPIA />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

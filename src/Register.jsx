@@ -1,10 +1,54 @@
 // Importaciones
-import { Search, Phone, Menu } from "lucide-react"; // Note: Menu, Search, Phone are not used, consider removing if not needed elsewhere.
+import { useState } from "react";
 import "./App.css";
 import { Link } from "react-router-dom";
-import {logoVerde} from './homepage.jsx';
+import { logoVerde } from "./homepage.jsx";
+
 // Definición del Componente Register
 function Register() {
+  // Estado para campos del formulario
+  const [formData, setFormData] = useState({
+    nombres: "",
+    apellidos: "",
+    email: "",
+    password: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  // Manejar cambios de campos
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  // Manejar envío del formulario
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:3001/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      alert(data.message);
+      if (res.ok) {
+        setFormData({ nombres: "", apellidos: "", email: "", password: "" });
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error al registrar. Verifica la conexión con el servidor.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     // Contenedor Más Externo
     <div className="min-h-screen bg-white font-['Rubik'] text-[#0A3C3F]">
@@ -24,19 +68,25 @@ function Register() {
                 />
               </Link>
             </div>
+
             {/* Encabezado */}
             <h1 className="text-xl md:text-2xl font-bold leading-tight text-[#0A3C3F] mb-6">
               Crear Cuenta
             </h1>
 
-            {/* Formulario de Registro */}
-            <form className="mt-6" action="#" method="POST">
+            {/* Formulario de Registro (mismo diseño) */}
+            <form className="mt-6" onSubmit={handleSubmit} aria-busy={loading}>
               {/* Grupo de Campos Nombres */}
               <fieldset className="fieldset mt-2">
                 <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Nombres</legend>
                 <input
                   type="text"
+                  name="nombres"
+                  value={formData.nombres}
+                  onChange={handleChange}
                   placeholder="John"
+                  autoComplete="given-name"
+                  disabled={loading}
                   className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
                   required
                 />
@@ -47,7 +97,12 @@ function Register() {
                 <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Apellidos</legend>
                 <input
                   type="text"
+                  name="apellidos"
+                  value={formData.apellidos}
+                  onChange={handleChange}
                   placeholder="Doe"
+                  autoComplete="family-name"
+                  disabled={loading}
                   className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
                   required
                 />
@@ -58,7 +113,12 @@ function Register() {
                 <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">E-mail</legend>
                 <input
                   type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
                   placeholder="nombre@ejemplo.com"
+                  autoComplete="email"
+                  disabled={loading}
                   className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
                   required
                 />
@@ -69,8 +129,13 @@ function Register() {
                 <legend className="fieldset-legend text-[#0A3C3F] text-base font-medium">Contraseña</legend>
                 <input
                   type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
                   placeholder="••••••••"
-                  minLength="6"
+                  minLength={6}
+                  autoComplete="new-password"
+                  disabled={loading}
                   className="w-full p-3 rounded-lg bg-[#d4f3ef] focus:outline-none focus:ring-1 focus:ring-[#0A3C3F] text-[#0A3C3F]"
                   required
                 />
@@ -79,9 +144,10 @@ function Register() {
               {/* Botón de Enviar */}
               <button
                 type="submit"
+                disabled={loading}
                 className="w-full block bg-[#0A3C3F] hover:bg-[#083032] focus:bg-[#083032] text-white font-semibold rounded-lg px-4 py-3 mt-6 transition-colors duration-300"
               >
-                Crear Cuenta
+                {loading ? "Registrando..." : "Crear Cuenta"}
               </button>
             </form>
 
@@ -101,11 +167,11 @@ function Register() {
 
             {/* Pie de Página de Copyright */}
             <p className="text-xs text-gray-500 mt-12 text-center">
-              &copy; 2025 Doctoralia - Todos los derechos reservados.
+              © 2025 Doctoralia - Todos los derechos reservados.
             </p>
           </div>
         </div>
-        
+
         {/* Panel Decorativo Derecho */}
         <div className="hidden lg:flex lg:w-7/12 items-center justify-center">
           {/* Imagen Decorativa */}

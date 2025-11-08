@@ -3,10 +3,11 @@
 // 2. App.css para estilos globales. Ahi tambien esta 
 // 3. react-router-dom para la navegación entre páginas. Link nos permite crear enlaces a otras rutas dentro de la aplicación.
 // 4. homepage.jsx para importar imágenes y datos de la página de inicio.
-
-import { Search, Phone, Menu, MapPin, ClipboardList, User, ChevronRight  } from "lucide-react";
+// Importaciones necesarias
+import { Search, Phone, Menu, MapPin, ClipboardList, User, CircleUserRound } from "lucide-react";
 import "./App.css";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
 import {
   heroImg1,
   heroImg2,
@@ -17,129 +18,126 @@ import {
   Index_Opiniones,
   Index_Teleconsulta,
   Index_Seguridad,
-  smileIcon,
-  capsuleIcon,
-  waveIcon,
   handMobileSvg,
-  doctorTypes,
 } from "./homepage";
 
-// Componente Principal App
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
+  // Verificar si el usuario está logueado
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (user) setIsLoggedIn(true);
+  }, []);
+
+  // Función para cerrar sesión
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setIsLoggedIn(false);
+    navigate("/login");
+  };
+
   return (
-    // Fondo de pantalla con un degradado, de color verde claro a amarillo, fuente Rubik por defecto en caso de no definir otra fuente
     <div className="min-h-screen bg-[linear-gradient(90deg,_rgba(34,193,195,0.06),_rgba(253,187,45,0.1))] font-['Rubik'] text-[#0A3C3F]">
 
-
-
-      {/* Sección del navbar */}
-
-      {/* Padding superior para el navbar, adaptado a diferentes tamaños de pantalla */}
+      {/* NAVBAR */}
       <div className="pt-4 md:pt-6 lg:pt-8">
-        {/* Contenedor principal del navbar, mx-auto para centrarlo, max-w-7xl para limitar el ancho máximo */}
-        <div className="container mx-auto px-4 max-w-7xl">
-          {/* Navbar con fondo verde oscuro, texto blanco, bordes redondeados y sombra */}
+        <div className="mx-auto px-4 max-w-7xl">
           <div className="navbar bg-[#0A3C3F] text-white rounded-lg shadow-md px-6 lg:px-8 py-3">
-            {/* Sección de inicio del navbar */}
             <div className="navbar-start">
-              {/* Logo de la aplicación, enlazado a la página de inicio */}
               <Link to="/" className="text-4xl font-bold font-['DM_Sans'] tracking-tight">
                 Doctoralia
               </Link>
             </div>
 
-            {/* Sección central del navbar, oculta en pantallas pequeñas */}
             <div className="navbar-center hidden lg:flex">
-              {/* Menú horizontal con enlaces a diferentes secciones */}
               <ul className="menu menu-horizontal px-1">
-                <li>
-                  {/* Inicio, usando Link para navegación interna */}
-                  <Link to="/" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">
-                    Inicio
-                  </Link>
-                </li>
-                <li>
-                  {/* Doctores*/}
-                  <a href="#" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">
-                    Doctores
-                  </a>
-                </li>
-                <li>
-                  {/* Servicios */}
-                  <a href="#" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">
-                    Servicios
-                  </a>
-                </li>
-                <li>
-                  {/* Contacto, usando Link para navegación interna */}
-                  <Link to="/contacto" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">
-                    Contacto
-                  </Link>
-                </li>
+                <li><Link to="/" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Inicio</Link></li>
+                <li><a href="#" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Doctores</a></li>
+                <li><a href="/appcopy" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Servicios</a></li>
+                <li><Link to="/contacto" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Contacto</Link></li>
               </ul>
             </div>
 
-            {/* Final del navbar */}
             <div className="navbar-end">
-              {/* Botones de búsqueda y sesión para pantallas grandes, hidden en pantallas pequeñas, flex para que el div se vuelva un flex container, sobreescribiendo el hidden*/}
-              <div className="hidden lg:flex items-center space-x-4">
-                {/* Botón de búsqueda, texto blanco, cambia a un color más claro al pasar el cursor */}
-                <button className="text-white hover:text-[#A9E8E0] p-2">
-                  {/* Icono de Lucide-react, icono de lupa, tamaño 22 */}
-                  <Search size={22} />
-                </button>
-                {/* Botón de contacto, con icono de teléfono */}
-                <Link
-                  to="/login"
-                  className="button rounded border border-white text-white px-5 py-2 hover:bg-white hover:text-[#0A3C3F] flex items-center"
-                >
-                  {/* Icono de usuario de Lucide-react, tamaño 16 */}
-                  {/* Margin right de 2 para separar el icono del texto, inline para que el icono y el texto estén en la misma línea */}
-                  <User size={16} className="inline mr-2" />
-                  Iniciar Sesión
-                </Link>
-              </div>
+              {/* --- SI NO ESTÁ LOGEADO (versión 1) --- */}
+              {!isLoggedIn ? (
+                <div className="hidden lg:flex items-center space-x-4">
+                  <button className="text-white hover:text-[#A9E8E0] p-2">
+                    <Search size={22} />
+                  </button>
+                  <Link
+                    to="/login"
+                    className="button rounded border border-white text-white px-5 py-2 hover:bg-white hover:text-[#0A3C3F] flex items-center"
+                  >
+                    <User size={16} className="inline mr-2" />
+                    Iniciar Sesión
+                  </Link>
+                </div>
+              ) : (
+                /* --- SI ESTÁ LOGEADO (versión 2) --- */
+                <div className="hidden lg:flex items-center space-x-4">
+                  <button className="text-white hover:text-[#A9E8E0] p-2">
+                    <Search size={22} />
+                  </button>
+                  <Link to="/perfil" className="text-white hover:text-[#A9E8E0] p-2">
+                    <CircleUserRound size={25} />
+                  </Link>
+                </div>
+              )}
 
-              {/* Botón de menú para pantallas pequeñas, dropdown para mostrar opciones */}
+              {/* Dropdown móvil */}
               <div className="dropdown dropdown-end lg:hidden">
-                {/* Boton que abre el dropdown */}
                 <button tabIndex={0} role="button" className="btn btn-ghost hover:bg-transparent text-white p-1">
-                  {/* Icono de menú de Lucide-react, tamaño 24 */}
                   <Menu size={24} />
                 </button>
                 <ul
                   tabIndex={0}
-                  // El menu en si y sus elementos dropdown-content es una clase de DaisyUI
-                  // z-[50] para que el dropdown se muestre por encima de otros elementos
                   className="menu dropdown-content bg-[#0A3C3F] text-white rounded-box z-[50] mt-3 w-64 p-4 shadow-lg"
                 >
-                  {/* Lista de enlaces del menú desplegable */}
                   <li><Link to="/" className="hover:text-[#A9E8E0] text-lg py-2">Inicio</Link></li>
                   <li><a href="#" className="hover:text-[#A9E8E0] text-lg py-2">Doctores</a></li>
                   <li><a href="#" className="hover:text-[#A9E8E0] text-lg py-2">Servicios</a></li>
                   <li><Link to="/contacto" className="hover:text-[#A9E8E0] text-lg py-2">Contacto</Link></li>
-                  
-                  {/* Sección de búsqueda y botón de inicio de sesión en el menú desplegable, añadi un orde al tope para separarlos del resto de los enlaces */}
+
                   <div className="pt-3 mt-3 border-t border-white">
-                    {/* Padding vertical de 1 */}
                     <li className="py-1">
                       <a href="#" className="hover:text-[#A9E8E0] flex items-center text-lg p-2">
-                        {/* Icono de búsqueda de Lucide-react, tamaño 20 */}
                         <Search size={20} className="mr-3" /> Buscar
                       </a>
                     </li>
 
-                    {/* Margin top de 2 */}
-                    <li className="mt-2">
-                      <Link
-                        to="/login"
-                        className="button rounded border border-white text-white px-5 py-2 text-base hover:bg-white hover:text-[#0A3C3F] flex items-center justify-center w-full"
-                      >
-                        {/* Icono de usuario de Lucide-react, tamaño 16 */}
-                        <User size={16} className="inline mr-2" />
-                        Iniciar Sesión
-                      </Link>
-                    </li>
+                    {/* Mostrar opciones según sesión */}
+                    {isLoggedIn ? (
+                      <>
+                        <li className="mt-2">
+                          <Link
+                            to="/perfil"
+                            className="button rounded border border-white text-white px-5 py-2 text-base hover:bg-white hover:text-[#0A3C3F] flex items-center justify-center w-full"
+                          >
+                            Mi Perfil
+                          </Link>
+                        </li>
+                        <li className="mt-2">
+                          <button
+                            onClick={handleLogout}
+                            className="button rounded border border-white text-white px-5 py-2 text-base hover:bg-white hover:text-[#0A3C3F] flex items-center justify-center w-full"
+                          >
+                            Cerrar Sesión
+                          </button>
+                        </li>
+                      </>
+                    ) : (
+                      <li className="mt-2">
+                        <Link
+                          to="/login"
+                          className="button rounded border border-white text-white px-5 py-2 text-base hover:bg-white hover:text-[#0A3C3F] flex items-center justify-center w-full"
+                        >
+                          Iniciar Sesión
+                        </Link>
+                      </li>
+                    )}
                   </div>
                 </ul>
               </div>
