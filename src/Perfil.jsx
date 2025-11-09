@@ -1,30 +1,42 @@
-import { Search, Phone, Menu, User, CircleUserRound } from "lucide-react"; 
-import "./App.css"; 
-import { Link, useNavigate } from 'react-router-dom'; 
+import {
+  Search,
+  Menu,
+  User,
+  CircleUserRound,
+  Clipboard,
+  CreditCard,
+} from "lucide-react";
+import "./App.css";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 function Perfil() {
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
   const navigate = useNavigate();
 
-  // Verificar si el usuario está logueado
+  // Verificar si el usuario está logueado y obtener datos
   useEffect(() => {
     const user = localStorage.getItem("user");
-    if (user) setIsLoggedIn(true);
+    if (user) {
+      setIsLoggedIn(true);
+      // Simular obtención del nombre del usuario (en una app real vendría de la API)
+      setUserName("Vineta Pham"); // Esto sería dinámico en producción
+    }
   }, []);
 
   // Función para cerrar sesión
   const handleLogout = () => {
     localStorage.removeItem("user");
     setIsLoggedIn(false);
+    setUserName("");
     navigate("/login");
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(90deg,_rgba(34,193,195,0.06),_rgba(253,187,45,0.1))] font-['Rubik'] text-[#0A3C3F]">
+    <div className="min-h-screen bg-[white] font-['Rubik'] text-[#0A3C3F]">
       {/* NAVBAR */}
-      <div className="pt-4 md:pt-6 lg:pt-8">
+      <div className="pt-0">
         <div className="mx-auto px-4 max-w-7xl">
           <div className="navbar bg-[#0A3C3F] text-white rounded-lg shadow-md px-6 lg:px-8 py-3">
             <div className="navbar-start">
@@ -74,7 +86,6 @@ function Perfil() {
             </div>
 
             <div className="navbar-end">
-              {/* --- SI NO ESTÁ LOGEADO (versión 1) --- */}
               {!isLoggedIn ? (
                 <div className="hidden lg:flex items-center space-x-4">
                   <button className="text-white hover:text-[#A9E8E0] p-2">
@@ -89,7 +100,6 @@ function Perfil() {
                   </Link>
                 </div>
               ) : (
-                /* --- SI ESTÁ LOGEADO (versión 2) --- */
                 <div className="hidden lg:flex items-center space-x-4">
                   <button className="text-white hover:text-[#A9E8E0] p-2">
                     <Search size={22} />
@@ -150,7 +160,6 @@ function Perfil() {
                       </a>
                     </li>
 
-                    {/* Mostrar opciones según sesión */}
                     {isLoggedIn ? (
                       <>
                         <li className="mt-2">
@@ -188,79 +197,189 @@ function Perfil() {
         </div>
       </div>
 
-      {/* Titulo de la página, sin fondo, en el centro en el eje x */}
+      {/* Titulo de la página */}
       <div className="text-center mt-12 mb-8">
-        <h1 className="text-4xl font-bold">Mi Perfil</h1>
+        <h1 className="text-4xl font-bold text-gray-700">Mi Perfil</h1>
       </div>
 
-      {/* Contenido del perfil, hero con menu a la izquierda y detalles a la derecha */}
-      <section className="hero min-h-[70vh] flex items-center">
-        <div className="hero-content flex-col lg:flex-row gap-8 lg:gap-16 w-full max-w-7xl mx-auto px-4 py-8 lg:py-16">
-          {/* Menu vertical - izquierda */}
+      {/* Contenido del perfil */}
+      <section className="flex min-h-[70vh]">
+        <div className="flex flex-col lg:flex-row gap-8 w-full max-w-6xl mx-auto px-4">
+          {/* Menu vertical */}
+          <ul className="menu border border-[#D3D3D3] rounded-box w-full lg:w-64 mt-0 h-fit">
+            <li className="border-b border-[#D3D3D3]">
+              <a className="py-3 text-[#000000]">Dashboard</a>
+            </li>
+            <li className="border-b border-[#D3D3D3]">
+              <a className="py-3 text-[#000000]">Detalles de Cuenta</a>
+            </li>
+            <li className="border-b border-[#D3D3D3]">
+              <a className="py-3 text-[#000000]">Historial Médico</a>
+            </li>
+            <li className="border-b border-[#D3D3D3]">
+              <a className="py-3 text-[#000000]">Mis Citas</a>
+            </li>
+            <li className="border-b border-[#D3D3D3]">
+              <a className="py-3 text-[#000000]">Pagos y Facturas</a>
+            </li>
+            <li className="border-b border-[#D3D3D3]">
+              <a className="py-3 text-[#000000]">Valoraciones</a>
+            </li>
+            <li>
+              <a className="py-3 text-[#cc30309c]">Cerrar Sesión</a>
+            </li>
+          </ul>
 
+          {/* Contenido principal */}
+          <div className="flex-1 mt-0">
+            {/* Encabezado personalizado */}
+            <div className="mb-4">
+              <div className="w-full">
+                <h2 className="text-2xl font-bold text-gray-700 mb-3">
+                  ¡Hola {userName}!
+                </h2>
+                <p className="text-gray-700 w-full">
+                  Hoy es un gran día para revisar tu perfil médico. Puedes
+                  consultar tus últimas citas o revisar tu historial médico. O
+                  tal vez puedas explorar nuestros servicios especializados y
+                  agendar tu próxima consulta.
+                </p>
+              </div>
+            </div>
 
-          <ul className="menu bg-base-200 rounded-box w-56">
-  <li>
-    <a>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-      Item 2
-    </a>
-  </li>
-  <li>
-    <a>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      Item 1
-    </a>
-  </li>
-  <li>
-    <a>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-      Item 3
-    </a>
-  </li>
-</ul>
+            <div className="py-2">
+              <div className="container mx-auto px-4">
+                {/* Grid de cards */}
+                <div className="grid grid-cols-1 [@media(min-width:545px)]:grid-cols-2 lg:grid-cols-2 gap-8">
+                  {/* Card Mi Cuenta */}
+                  <div className="card bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 w-full max-w-sm mx-auto h-52">
+                    <div className="card-body flex flex-col items-center justify-center text-center p-6 h-full">
+                      <Clipboard size={40} className="text-black mb-2" />
+                      <h4 className="card-title text-lg font-semibold text-black mb-1">
+                        Mi Cuenta
+                      </h4>
+                      <p className="text-sm text-gray-700">
+                        Gestiona tu información personal, contraseña y
+                        preferencias de cuenta
+                      </p>
+                    </div>
+                  </div>
 
-          {/* Grid con 2 cards arriba y 2 imagenes promocionales abajo - derecha */}
-          <div className="flex-1 relative mt-8 lg:mt-0">
+                  {/* Card Pagos */}
+                  <div className="card bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 w-full max-w-sm mx-auto h-52">
+                    <div className="card-body flex flex-col items-center justify-center text-center p-6 h-full">
+                      <CreditCard size={40} className="text-black mb-2" />
+                      <h4 className="card-title text-lg font-semibold text-black mb-1">
+                        Pagos
+                      </h4>
+                      <p className="text-sm text-gray-700">
+                        Administra tus métodos de pago, facturas y historial de
+                        transacciones
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
+                {/* Banner promocional */}
+                <div
+                  className="relative h-64 w-full rounded-xl mt-8 overflow-hidden flex items-center justify-end"
+                  style={{
+                    backgroundImage:
+                      "url('src/assets/img/Perfil/Paciente/account-1.png')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  <div className="relative z-10 text-gray-700 text-right max-w-md pr-5 sm:pr-8 md:pr-12 lg:pr-25 px-3 sm:px-4">
+                    <h2 className="text-[24px] sm:text-2xl md:text-3xl lg:text-4xl font-semibold mb-1 sm:mb-2">
+                      Cuida tu Salud
+                    </h2>
+                    <p className="text-[14px] sm:text-sm md:text-base mb-3 sm:mb-4">
+                      Chequeo anual con 20% <br></br>de descuento.
+                    </p>
+                    <button className="btn bg-gray-700 text-[#ffffff] border-gray-700 hover:bg-gray-800 hover:border-gray-800 rounded-full btn-sm sm:btn-md">
+                      Agendar cita
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  className="relative w-full rounded-xl mt-8 overflow-hidden flex flex-col [@media(min-width:570px)]:flex-row items-center justify-between gap-6 [@media(min-width:570px)]:gap-10 px-6 sm:px-10 md:px-12 lg:px-16 py-6"
+                  style={{ backgroundColor: "#204B4E" }}
+                >
+                  {/* Lado izquierdo: texto */}
+                  <div className="relative z-10 text-white text-left w-full [@media(min-width:570px)]:w-1/2">
+                    <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+                      Próxima Cita
+                    </h2>
+                    <div className="text-xs sm:text-sm opacity-90 leading-relaxed space-y-1 mb-4">
+                      <p>📅: 12 de Noviembre</p>
+                      <p>🕑: 10:00 A.M</p>
+                      <p>👩‍⚕️: Dra. López</p>
+                    </div>
+                    <button className="btn bg-white text-gray-700 border-white hover:bg-gray-100 hover:border-gray-100 rounded-full btn-xs sm:btn-sm">
+                      Ver detalles
+                    </button>
+                  </div>
+
+                  {/* Lado derecho: countdown */}
+                  <div className="bg-white rounded-2xl px-5 py-4 shadow-sm text-gray-700 flex items-center justify-center w-full [@media(min-width:570px)]:w-auto">
+                    <div className="grid grid-flow-col gap-4 sm:gap-5 text-center auto-cols-max">
+                      <div className="flex flex-col items-center">
+                        <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
+                          <span style={{ "--value": 15 }}></span>
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium tracking-wide">
+                          días
+                        </span>
+                      </div>
+
+                      <span className="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center justify-center">
+                        :
+                      </span>
+
+                      <div className="flex flex-col items-center">
+                        <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
+                          <span style={{ "--value": 10 }}></span>
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium tracking-wide">
+                          horas
+                        </span>
+                      </div>
+
+                      <span className="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center justify-center">
+                        :
+                      </span>
+
+                      <div className="flex flex-col items-center">
+                        <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
+                          <span style={{ "--value": 24 }}></span>
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium tracking-wide">
+                          min
+                        </span>
+                      </div>
+
+                      <span className="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center justify-center">
+                        :
+                      </span>
+
+                      <div className="flex flex-col items-center">
+                        <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
+                          <span style={{ "--value": 59 }}></span>
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium tracking-wide">
+                          seg
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
-
-
     </div>
   );
 }
