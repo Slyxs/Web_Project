@@ -12,6 +12,7 @@ import {
   History
 } from "lucide-react";
 import "./App.css";
+import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -301,136 +302,293 @@ function Perfil() {
 }
 
 // Componentes para cada sección
-const DashboardContent = ({ userName }) => (
-  <>
-    <div className="mb-4">
-      <div className="w-full">
-        <h2 className="text-2xl font-bold text-gray-700 mb-3">
-          ¡Hola {userName}!
-        </h2>
-        <p className="text-gray-700 w-full">
-          Hoy es un gran día para revisar tu perfil médico. Puedes
-          consultar tus últimas citas o revisar tu historial médico. O
-          tal vez puedas explorar nuestros servicios especializados y
-          agendar tu próxima consulta.
-        </p>
+const DashboardContent = ({ userName }) => {
+  const [greetingName, setGreetingName] = useState(userName || "");
+  const [loadingAppt, setLoadingAppt] = useState(true);
+  const [errorAppt, setErrorAppt] = useState("");
+  const [nextAppt, setNextAppt] = useState(null); // { proximaCita, doctor }
+  const [countdown, setCountdown] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+
+  // Leer nombre real desde localStorage si está disponible
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u?.nombres || u?.apellidos) {
+          setGreetingName(`${u.nombres || ""} ${u.apellidos || ""}`.trim());
+        }
+      }
+    } catch {
+      // si falla el parse, dejamos el prop o vacío
+    }
+  }, [userName]);
+
+  // Obtener próxima cita
+  useEffect(() => {
+    const fetchNextAppointment = async () => {
+      setLoadingAppt(true);
+      setErrorAppt("");
+      try {
+        const rawUser = localStorage.getItem("user");
+        const token = localStorage.getItem("token");
+        if (!rawUser || !token) {
+          setLoadingAppt(false);
+          return;
+        }
+        const u = JSON.parse(rawUser);
+        const usuarioId = u?.id;
+        if (!usuarioId) {
+          setLoadingAppt(false);
+          return;
+        }
+
+        const res = await axios.get(
+          `http://localhost:3001/api/pacientes/${usuarioId}/proxima-cita`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (res.data?.proximaCita) {
+          setNextAppt(res.data);
+        } else {
+          setNextAppt(null);
+        }
+      } catch (err) {
+        console.error(err);
+        setErrorAppt("No se pudo cargar tu próxima cita.");
+      } finally {
+        setLoadingAppt(false);
+      }
+    };
+
+    fetchNextAppointment();
+  }, []);
+
+  // Actualizar countdown cada segundo cuando hay una cita
+  useEffect(() => {
+    if (!nextAppt?.proximaCita?.fecha_hora) return;
+
+    // Aseguramos un parse consistente de DATETIME MySQL -> Date
+    const mysqlToJsDate = (dt) => {
+      // dt esperado: "YYYY-MM-DD HH:mm:ss"
+      if (typeof dt === "string" && dt.includes(" ")) {
+        return new Date(dt.replace(" ", "T"));
+      }
+      return new Date(dt);
+    };
+
+    const targetDate = mysqlToJsDate(nextAppt.proximaCita.fecha_hora);
+
+    const tick = () => {
+      const now = new Date();
+      let diff = targetDate - now;
+      if (diff < 0) diff = 0;
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      setCountdown({ days, hours, minutes, seconds });
+    };
+
+    tick(); // inicial
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [nextAppt]);
+
+  // Helpers de formato
+  const formatFecha = (datetimeStr) => {
+    if (!datetimeStr) return "";
+    const d = new Date(datetimeStr.replace(" ", "T"));
+    // Ej: "martes, 12 de noviembre de 2025"
+    return d.toLocaleDateString("es-ES", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  // Devuelve hora en formato 12 horas con sufijo AM/PM en mayúsculas
+  const formatHora = (datetimeStr) => {
+    if (!datetimeStr) return ""; // Si no hay string, devuelve vacío
+    const d = new Date(datetimeStr.replace(" ", "T")); // Convierte "YYYY-MM-DD HH:mm:ss" a Date
+    let hours = d.getHours(); // Horas en 24h (0-23)
+    const minutes = String(d.getMinutes()).padStart(2, "0"); // Minutos con 2 dígitos
+    const suffix = hours >= 12 ? "PM" : "AM"; // Sufijo AM/PM
+    hours = hours % 12 || 12; // Convierte a 12h (0->12)
+    return `${hours}:${minutes} ${suffix}`; // Ej: "10:05 AM"
+  };
+
+  const doctorNombre = nextAppt?.doctor
+    ? `${nextAppt.doctor.nombres} ${nextAppt.doctor.apellidos}`.trim()
+    : "";
+
+  const hayCita = Boolean(nextAppt?.proximaCita);
+
+  return (
+    <>
+      <div className="mb-4">
+        <div className="w-full">
+          <h2 className="text-2xl font-bold text-gray-700 mb-3">
+            ¡Hola {greetingName || "Usuario"}!
+          </h2>
+          <p className="text-gray-700 w-full">
+            Hoy es un gran día para revisar tu perfil médico. Puedes consultar
+            tus últimas citas o revisar tu historial médico. O tal vez puedas
+            explorar nuestros servicios especializados y agendar tu próxima
+            consulta.
+          </p>
+        </div>
       </div>
-    </div>
 
-    <div className="py-2">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 [@media(min-width:545px)]:grid-cols-2 lg:grid-cols-2 gap-8">
-          <div className="card bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 w-full max-w-sm mx-auto h-52">
-            <div className="card-body flex flex-col items-center justify-center text-center p-6 h-full">
-              <CircleUserRound size={40} className="text-black mb-2" />
-              <h4 className="card-title text-lg font-semibold text-black mb-1">
-                Mi Cuenta
-              </h4>
-              <p className="text-sm text-gray-700">
-                Gestiona tu información personal, contraseña y
-                preferencias de cuenta
+      <div className="py-2">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 [@media(min-width:545px)]:grid-cols-2 lg:grid-cols-2 gap-8">
+            <div className="card bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 w-full max-w-sm mx-auto h-52">
+              <div className="card-body flex flex-col items-center justify-center text-center p-6 h-full">
+                <CircleUserRound size={40} className="text-gray-700 mb-0" />
+                <h4 className="card-title text-lg font-semibold text-gray-700 mb-1">
+                  Mi Cuenta
+                </h4>
+                <p className="text-sm text-gray-700">
+                  Gestiona tu información personal, contraseña y preferencias de
+                  cuenta
+                </p>
+              </div>
+            </div>
+
+            <div className="card bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 w-full max-w-sm mx-auto h-52">
+              <div className="card-body flex flex-col items-center justify-center text-center p-6 h-full">
+                <CircleDollarSign size={40} className="text-gray-700 mb-0" />
+                <h4 className="card-title text-lg font-semibold text-gray-700 mb-1">
+                  Pagos
+                </h4>
+                <p className="text-sm text-gray-700">
+                  Administra tus métodos de pago, facturas y historial de
+                  transacciones
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="relative h-64 w-full rounded-xl mt-8 overflow-hidden flex items-center justify-end"
+            style={{
+              backgroundImage:
+                "url('src/assets/img/Perfil/Paciente/account-1.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <div className="relative z-10 text-gray-700 text-right max-w-md pr-5 sm:pr-8 md:pr-12 lg:pr-25 px-3 sm:px-4">
+              <h2 className="text-[24px] sm:text-2xl md:text-3xl lg:text-4xl font-semibold mb-1 sm:mb-2">
+                Cuida tu Salud
+              </h2>
+              <p className="text-[14px] sm:text-sm md:text-base mb-3 sm:mb-4">
+                Chequeo anual con 20% <br />
+                de descuento.
               </p>
+              <button className="btn bg-gray-700 text-[#ffffff] border-gray-700 hover:bg-gray-800 hover:border-gray-800 rounded-full btn-sm sm:btn-md">
+                Agendar cita
+              </button>
             </div>
           </div>
 
-          <div className="card bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 w-full max-w-sm mx-auto h-52">
-            <div className="card-body flex flex-col items-center justify-center text-center p-6 h-full">
-              <CircleDollarSign size={40} className="text-black mb-2" />
-              <h4 className="card-title text-lg font-semibold text-black mb-1">
-                Pagos
-              </h4>
-              <p className="text-sm text-gray-700">
-                Administra tus métodos de pago, facturas y historial de
-                transacciones
-              </p>
+          <div
+            className="relative w-full rounded-xl mt-8 overflow-hidden flex flex-col [@media(min-width:570px)]:flex-row items-center justify-between gap-6 [@media(min-width:570px)]:gap-10 px-6 sm:px-10 md:px-12 lg:px-16 py-6"
+            style={{ backgroundColor: "#204B4E" }}
+          >
+            <div className="relative z-10 text-white text-left w-full [@media(min-width:570px)]:w-1/2">
+              <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+                Próxima Cita
+              </h2>
+
+              {loadingAppt ? (
+                <div className="text-sm opacity-90">Cargando...</div>
+              ) : errorAppt ? (
+                <div className="text-sm opacity-90">{errorAppt}</div>
+              ) : hayCita ? (
+                <div className="text-xs sm:text-sm opacity-90 leading-relaxed space-y-1 mb-4">
+                  <p>📅: {formatFecha(nextAppt.proximaCita.fecha_hora)}</p>
+                  <p>🕑: {formatHora(nextAppt.proximaCita.fecha_hora)}</p>
+                  <p>👩‍⚕️: {doctorNombre}</p>
+                </div>
+              ) : (
+                <div className="text-xs sm:text-sm opacity-90 leading-relaxed space-y-1 mb-4">
+                  <p>No tienes citas próximas programadas.</p>
+                </div>
+              )}
+
+              <button className="btn bg-white text-gray-700 border-white hover:bg-gray-100 hover:border-gray-100 rounded-full btn-xs sm:btn-sm">
+                Ver detalles
+              </button>
             </div>
-          </div>
-        </div>
 
-        <div
-          className="relative h-64 w-full rounded-xl mt-8 overflow-hidden flex items-center justify-end"
-          style={{
-            backgroundImage:
-              "url('src/assets/img/Perfil/Paciente/account-1.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <div className="relative z-10 text-gray-700 text-right max-w-md pr-5 sm:pr-8 md:pr-12 lg:pr-25 px-3 sm:px-4">
-            <h2 className="text-[24px] sm:text-2xl md:text-3xl lg:text-4xl font-semibold mb-1 sm:mb-2">
-              Cuida tu Salud
-            </h2>
-            <p className="text-[14px] sm:text-sm md:text-base mb-3 sm:mb-4">
-              Chequeo anual con 20% <br></br>de descuento.
-            </p>
-            <button className="btn bg-gray-700 text-[#ffffff] border-gray-700 hover:bg-gray-800 hover:border-gray-800 rounded-full btn-sm sm:btn-md">
-              Agendar cita
-            </button>
-          </div>
-        </div>
-
-        <div
-          className="relative w-full rounded-xl mt-8 overflow-hidden flex flex-col [@media(min-width:570px)]:flex-row items-center justify-between gap-6 [@media(min-width:570px)]:gap-10 px-6 sm:px-10 md:px-12 lg:px-16 py-6"
-          style={{ backgroundColor: "#204B4E" }}
-        >
-          <div className="relative z-10 text-white text-left w-full [@media(min-width:570px)]:w-1/2">
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
-              Próxima Cita
-            </h2>
-            <div className="text-xs sm:text-sm opacity-90 leading-relaxed space-y-1 mb-4">
-              <p>📅: 12 de Noviembre</p>
-              <p>🕑: 10:00 A.M</p>
-              <p>👩‍⚕️: Dra. López</p>
-            </div>
-            <button className="btn bg-white text-gray-700 border-white hover:bg-gray-100 hover:border-gray-100 rounded-full btn-xs sm:btn-sm">
-              Ver detalles
-            </button>
-          </div>
-
-          <div className="bg-white rounded-2xl px-5 py-4 shadow-sm text-gray-700 flex items-center justify-center w-full [@media(min-width:570px)]:w-auto">
-            <div className="grid grid-flow-col gap-4 sm:gap-5 text-center auto-cols-max">
-              <div className="flex flex-col items-center">
-                <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
-                  <span style={{ "--value": 15 }}></span>
-                </span>
-                <span className="text-xs sm:text-sm font-medium tracking-wide">
-                  días
-                </span>
-              </div>
-              <span className="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center justify-center">:</span>
-              <div className="flex flex-col items-center">
-                <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
-                  <span style={{ "--value": 10 }}></span>
-                </span>
-                <span className="text-xs sm:text-sm font-medium tracking-wide">
-                  horas
-                </span>
-              </div>
-              <span className="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center justify-center">:</span>
-              <div className="flex flex-col items-center">
-                <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
-                  <span style={{ "--value": 24 }}></span>
-                </span>
-                <span className="text-xs sm:text-sm font-medium tracking-wide">
-                  min
-                </span>
-              </div>
-              <span className="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center justify-center">:</span>
-              <div className="flex flex-col items-center">
-                <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
-                  <span style={{ "--value": 59 }}></span>
-                </span>
-                <span className="text-xs sm:text-sm font-medium tracking-wide">
-                  seg
-                </span>
-              </div>
+            <div className="bg-white rounded-2xl px-5 py-4 shadow-sm text-gray-700 flex items-center justify-center w-full [@media(min-width:570px)]:w-auto">
+              {hayCita ? (
+                <div className="grid grid-flow-col gap-4 sm:gap-5 text-center auto-cols-max">
+                  <div className="flex flex-col items-center">
+                    <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
+                      <span style={{ "--value": countdown.days }}></span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-medium tracking-wide">
+                      días
+                    </span>
+                  </div>
+                  <span className="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center justify-center">
+                    :
+                  </span>
+                  <div className="flex flex-col items-center">
+                    <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
+                      <span style={{ "--value": countdown.hours }}></span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-medium tracking-wide">
+                      horas
+                    </span>
+                  </div>
+                  <span className="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center justify-center">
+                    :
+                  </span>
+                  <div className="flex flex-col items-center">
+                    <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
+                      <span style={{ "--value": countdown.minutes }}></span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-medium tracking-wide">
+                      min
+                    </span>
+                  </div>
+                  <span className="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center justify-center">
+                    :
+                  </span>
+                  <div className="flex flex-col items-center">
+                    <span className="countdown font-mono text-3xl sm:text-4xl leading-none mb-1">
+                      <span style={{ "--value": countdown.seconds }}></span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-medium tracking-wide">
+                      seg
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm sm:text-base text-center px-2">
+                  Sin próximas citas
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </>
-);
+    </>
+  );
+};
+
 
 const AccountDetailsContent = () => (
   <div>

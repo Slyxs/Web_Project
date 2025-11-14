@@ -270,6 +270,82 @@ app.post("/api/login", (req, res) => {
 
 
 // ================================
+// 🧩 RUTA: Próxima cita de un paciente (por usuario_id) con JWT
+// ================================
+app.get("/api/pacientes/:usuarioId/proxima-cita", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const usuarioId = parseInt(req.params.usuarioId, 10);
+  if (!Number.isInteger(usuarioId)) {
+    return res.status(400).json({ message: "usuarioId inválido" });
+  }
+
+  // Solo el propio usuario o un admin puede consultar la próxima cita del paciente
+  if (decoded.tipo !== "admin" && decoded.id !== usuarioId) {
+    return res.status(403).json({ message: "No autorizado" });
+  }
+
+  const sql = `
+    SELECT
+      c.id AS cita_id,
+      c.fecha_hora,
+      c.duracion_minutos,
+      c.tipo_consulta,
+      c.estado,
+      c.motivo,
+      d.id AS doctor_id,
+      u.nombres AS doctor_nombres,
+      u.apellidos AS doctor_apellidos
+    FROM citas c
+    JOIN pacientes p ON c.paciente_id = p.id
+    JOIN doctores d ON c.doctor_id = d.id
+    JOIN usuarios u ON d.usuario_id = u.id
+    WHERE p.usuario_id = ?
+      AND c.fecha_hora > NOW()
+      AND c.estado IN ('pendiente','confirmada','en_curso')
+    ORDER BY c.fecha_hora ASC
+    LIMIT 1
+  `;
+
+  connection.query(sql, [usuarioId], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener próxima cita:", err);
+      return res.status(500).json({ message: "Error al obtener próxima cita" });
+    }
+
+    if (rows.length === 0) {
+      return res.status(200).json({ proximaCita: null });
+    }
+
+    const r = rows[0];
+    res.status(200).json({
+      proximaCita: {
+        id: r.cita_id,
+        fecha_hora: r.fecha_hora, // formato MySQL DATETIME
+        duracion_minutos: r.duracion_minutos,
+        tipo_consulta: r.tipo_consulta,
+        estado: r.estado,
+        motivo: r.motivo
+      },
+      doctor: {
+        id: r.doctor_id,
+        nombres: r.doctor_nombres,
+        apellidos: r.doctor_apellidos
+      }
+    });
+  });
+});
+
+
+// ================================
 // 🧩 RUTA: Enviar mensaje de contacto
 // ================================
 app.post("/api/contacto", (req, res) => {
