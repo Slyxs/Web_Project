@@ -344,6 +344,137 @@ app.get("/api/pacientes/:usuarioId/proxima-cita", (req, res) => {
   });
 });
 
+// ================================
+// 🧩 RUTA: Obtener perfil completo del paciente
+// ================================
+app.get("/api/pacientes/profile", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const sql = `
+    SELECT 
+      u.id, u.email, u.nombres, u.apellidos, u.tipo,
+      p.telefono, p.fecha_nacimiento, p.genero, p.foto_perfil, p.direccion,
+      p.departamento_id, p.provincia_id, p.tipo_sangre, p.alergias,
+      p.condiciones_medicas, p.medicamentos_actuales,
+      p.contacto_emergencia_nombre, p.contacto_emergencia_telefono,
+      p.seguro_medico, p.numero_poliza_seguro
+    FROM usuarios u
+    LEFT JOIN pacientes p ON u.id = p.usuario_id
+    WHERE u.id = ? AND u.tipo = 'paciente'
+  `;
+
+  connection.query(sql, [decoded.id], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener perfil:", err);
+      return res.status(500).json({ message: "Error al obtener perfil" });
+    }
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Perfil no encontrado" });
+    }
+
+    res.status(200).json(rows[0]);
+  });
+});
+
+// ================================
+// 🧩 RUTA: Actualizar perfil del paciente
+// ================================
+app.put("/api/pacientes/profile", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const {
+    nombres, apellidos, email, telefono, fecha_nacimiento, genero,
+    direccion, departamento_id, provincia_id, tipo_sangre, alergias,
+    condiciones_medicas, medicamentos_actuales, contacto_emergencia_nombre,
+    contacto_emergencia_telefono, seguro_medico, numero_poliza_seguro
+  } = req.body;
+
+  try {
+    // Actualizar tabla usuarios
+    const updateUsuarioQuery = `
+      UPDATE usuarios 
+      SET nombres = ?, apellidos = ?, email = ?
+      WHERE id = ?
+    `;
+    
+    connection.query(
+      updateUsuarioQuery,
+      [nombres, apellidos, email, decoded.id],
+      (err) => {
+        if (err) {
+          console.error("❌ Error al actualizar usuario:", err);
+          return res.status(500).json({ message: "Error al actualizar datos de usuario" });
+        }
+
+        // Verificar si existe registro en pacientes
+        const checkPacienteQuery = "SELECT id FROM pacientes WHERE usuario_id = ?";
+        
+        connection.query(checkPacienteQuery, [decoded.id], (err, results) => {
+          if (err) {
+            console.error("❌ Error al verificar paciente:", err);
+            return res.status(500).json({ message: "Error al verificar paciente" });
+          }
+
+          const pacienteData = {
+            telefono, fecha_nacimiento, genero, direccion, departamento_id,
+            provincia_id, tipo_sangre, alergias, condiciones_medicas,
+            medicamentos_actuales, contacto_emergencia_nombre,
+            contacto_emergencia_telefono, seguro_medico, numero_poliza_seguro
+          };
+
+          if (results.length > 0) {
+            // Actualizar paciente existente
+            const updatePacienteQuery = `
+              UPDATE pacientes SET ? WHERE usuario_id = ?
+            `;
+            connection.query(updatePacienteQuery, [pacienteData, decoded.id], (err) => {
+              if (err) {
+                console.error("❌ Error al actualizar paciente:", err);
+                return res.status(500).json({ message: "Error al actualizar datos médicos" });
+              }
+              res.status(200).json({ message: "✅ Perfil actualizado con éxito" });
+            });
+          } else {
+            // Insertar nuevo registro de paciente
+            const insertPacienteQuery = `
+              INSERT INTO pacientes (usuario_id, ?) VALUES (?, ?)
+            `;
+            connection.query(insertPacienteQuery, [pacienteData, decoded.id], (err) => {
+              if (err) {
+                console.error("❌ Error al insertar paciente:", err);
+                return res.status(500).json({ message: "Error al crear datos médicos" });
+              }
+              res.status(200).json({ message: "✅ Perfil creado y actualizado con éxito" });
+            });
+          }
+        });
+      }
+    );
+  } catch (error) {
+    console.error("❌ Error en actualización:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+
+
+
 
 // ================================
 // 🧩 RUTA: Enviar mensaje de contacto

@@ -14,7 +14,7 @@ import {
 import "./App.css";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 function Perfil() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -590,43 +590,557 @@ const DashboardContent = ({ userName }) => {
 };
 
 
-const AccountDetailsContent = () => (
-  <div>
-    <h2 className="text-2xl font-bold text-gray-700 mb-6">Detalles de Cuenta</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="card bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold mb-4">Información Personal</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm text-gray-600">Nombre completo</label>
-            <p className="font-medium">Vineta Pham</p>
-          </div>
-          <div>
-            <label className="text-sm text-gray-600">Email</label>
-            <p className="font-medium">vineta.pham@email.com</p>
-          </div>
-          <div>
-            <label className="text-sm text-gray-600">Teléfono</label>
-            <p className="font-medium">+34 123 456 789</p>
+const AccountDetailsContent = () => {
+  const [userData, setUserData] = useState(null);
+  const [isEditingAccount, setIsEditingAccount] = useState(false);
+  const [isEditingHealth, setIsEditingHealth] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [savingAccount, setSavingAccount] = useState(false);
+  const [savingHealth, setSavingHealth] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  
+  const token = localStorage.getItem("token");
+  const originalDataRef = useRef(null);
+
+  // Cargar datos del perfil
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get("http://localhost:3001/api/pacientes/profile", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUserData(res.data);
+        originalDataRef.current = res.data;
+      } catch (err) {
+        console.error("Error al cargar perfil:", err);
+        setErrorMessage("No se pudo cargar la información del perfil");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [token]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setUserData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Guardar sección Cuenta y Contacto
+  const handleSaveAccount = async () => {
+    try {
+      setSavingAccount(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+      
+      const accountData = {
+        nombres: userData.nombres,
+        apellidos: userData.apellidos,
+        email: userData.email,
+        telefono: userData.telefono,
+        direccion: userData.direccion,
+        departamento_id: userData.departamento_id,
+        provincia_id: userData.provincia_id,
+        genero: userData.genero
+      };
+      
+      await axios.put("http://localhost:3001/api/pacientes/profile", accountData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setSuccessMessage("✅ Datos de cuenta actualizados correctamente");
+      setIsEditingAccount(false);
+      originalDataRef.current = { ...originalDataRef.current, ...accountData };
+    } catch (err) {
+      console.error("Error al guardar cuenta:", err);
+      setErrorMessage("❌ Error al actualizar los datos de cuenta");
+    } finally {
+      setSavingAccount(false);
+    }
+  };
+
+  // Guardar sección Salud y Emergencia
+  const handleSaveHealth = async () => {
+    try {
+      setSavingHealth(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+      
+      const healthData = {
+        fecha_nacimiento: userData.fecha_nacimiento,
+        tipo_sangre: userData.tipo_sangre,
+        alergias: userData.alergias,
+        condiciones_medicas: userData.condiciones_medicas,
+        medicamentos_actuales: userData.medicamentos_actuales,
+        contacto_emergencia_nombre: userData.contacto_emergencia_nombre,
+        contacto_emergencia_telefono: userData.contacto_emergencia_telefono,
+        seguro_medico: userData.seguro_medico,
+        numero_poliza_seguro: userData.numero_poliza_seguro
+      };
+      
+      await axios.put("http://localhost:3001/api/pacientes/profile", healthData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setSuccessMessage("✅ Datos médicos actualizados correctamente");
+      setIsEditingHealth(false);
+      originalDataRef.current = { ...originalDataRef.current, ...healthData };
+    } catch (err) {
+      console.error("Error al guardar salud:", err);
+      setErrorMessage("❌ Error al actualizar los datos médicos");
+    } finally {
+      setSavingHealth(false);
+    }
+  };
+
+  const handleCancel = (section) => {
+    setUserData(originalDataRef.current);
+    setErrorMessage("");
+    setSuccessMessage("");
+    
+    if (section === 'account') {
+      setIsEditingAccount(false);
+    } else if (section === 'health') {
+      setIsEditingHealth(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="loading loading-spinner loading-lg text-gray-700"></div>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return <div className="text-red-500">Error al cargar el perfil</div>;
+  }
+
+  const fullName = `${userData.nombres || ''} ${userData.apellidos || ''}`.trim();
+  const avatarSrc = userData.foto_perfil || "https://img.daisyui.com/images/profile/demo/gordon@192.webp";
+
+  return (
+    <div className="space-y-4">
+      {/* Mensajes de estado */}
+      {successMessage && (
+        <div className="alert alert-success bg-green-50 text-green-700 border-green-200">
+          <span>{successMessage}</span>
+        </div>
+      )}
+      {errorMessage && (
+        <div className="alert alert-error bg-red-50 text-red-700 border-red-200">
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Card resumen */}
+      <div className="card bg-base-100 w-full border border-gray-200">
+        <div className="card-body py-3 px-4">
+          <div className="flex items-start gap-4">
+            <div className="indicator">
+              <span className="indicator-item indicator-middle badge badge-success"></span>
+              <div className="rounded-xl overflow-hidden h-32 w-32 bg-gray-100">
+                <img src={avatarSrc} alt="Avatar del usuario" className="object-cover w-full h-full" />
+              </div>
+            </div>
+            <div className="flex-1 ml-2 sm:ml-3 pt-0">
+              <h2 className="text-2xl font-bold text-gray-700 leading-tight mt-[-4px] mb-1">{fullName}</h2>
+              <p className="text-sm text-gray-600">{userData.email}</p>
+            </div>
           </div>
         </div>
       </div>
-      <div className="card bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold mb-4">Preferencias</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm text-gray-600">Idioma preferido</label>
-            <p className="font-medium">Español</p>
-          </div>
-          <div>
-            <label className="text-sm text-gray-600">Notificaciones</label>
-            <p className="font-medium">Activadas</p>
-          </div>
+
+      {/* Tabs */}
+      <div className="tabs tabs-lift tabs-sm">
+        {/* TAB 1: Cuenta y Contacto */}
+        <input type="radio" name="account_tabs" className="tab" aria-label="Cuenta y Contacto" defaultChecked />
+        <div className="tab-content bg-base-100 border-base-300 p-6">
+          <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-0">
+              <h3 className="text-lg font-semibold text-gray-700 mb-3">Cuenta y perfil</h3>
+              
+              <fieldset className="fieldset border-none rounded-md p-1 mb-3">
+                <label className="label pt-0 pb-0">
+                  <span className="label-text text-sm font-medium text-gray-700">Nombres</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="nombres"
+                  className="input w-full" 
+                  value={userData.nombres || ''}
+                  onChange={handleInputChange}
+                  disabled={!isEditingAccount} 
+                />
+              </fieldset>
+
+              <fieldset className="fieldset border-none rounded-md p-1 mb-3">
+                <label className="label pt-0 pb-0">
+                  <span className="label-text text-sm font-medium text-gray-700">Apellidos</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="apellidos"
+                  className="input w-full" 
+                  value={userData.apellidos || ''}
+                  onChange={handleInputChange}
+                  disabled={!isEditingAccount} 
+                />
+              </fieldset>
+
+              <fieldset className="fieldset border-none rounded-md p-1 mb-3">
+                <label className="label pt-0 pb-0">
+                  <span className="label-text text-sm font-medium text-gray-700">Género</span>
+                </label>
+                <select 
+                  name="genero"
+                  className="select w-full" 
+                  value={userData.genero || ''}
+                  onChange={handleInputChange}
+                  disabled={!isEditingAccount}
+                >
+                  <option value="">Selecciona una opción</option>
+                  <option value="femenino">Femenino</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </fieldset>
+
+              <fieldset className="fieldset border-none rounded-md p-1 mb-3">
+                <label className="label pt-0 pb-0">
+                  <span className="label-text text-sm font-medium text-gray-700">Email</span>
+                </label>
+                <input 
+                  type="email" 
+                  name="email"
+                  className="input w-full" 
+                  value={userData.email || ''}
+                  onChange={handleInputChange}
+                  disabled={!isEditingAccount} 
+                />
+              </fieldset>
+            </div>
+
+            <div className="p-0">
+              <h3 className="text-lg font-semibold text-gray-700 mb-3">Contacto y ubicación</h3>
+              
+              <fieldset className="fieldset border-none rounded-md p-1 mb-3">
+                <label className="label pt-0 pb-0">
+                  <span className="label-text text-sm font-medium text-gray-700">Teléfono</span>
+                </label>
+                <label className="input validator w-full">
+                  <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                    <g fill="none">
+                      <path d="M7.25 11.5C6.83579 11.5 6.5 11.8358 6.5 12.25C6.5 12.6642 6.83579 13 7.25 13H8.75C9.16421 13 9.5 12.6642 9.5 12.25C9.5 11.8358 9.16421 11.5 8.75 11.5H7.25Z" fill="currentColor"></path>
+                      <path fillRule="evenodd" clipRule="evenodd" d="M6 1C4.61929 1 3.5 2.11929 3.5 3.5V12.5C3.5 13.8807 4.61929 15 6 15H10C11.3807 15 12.5 13.8807 12.5 12.5V3.5C12.5 2.11929 11.3807 1 10 1H6ZM10 2.5H9.5V3C9.5 3.27614 9.27614 3.5 9 3.5H7C6.72386 3.5 6.5 3.27614 6.5 3V2.5H6C5.44771 2.5 5 2.94772 5 3.5V12.5C5 13.0523 5.44772 13.5 6 13.5H10C10.5523 13.5 11 13.0523 11 12.5V3.5C11 2.94772 10.5523 2.5 10 2.5Z" fill="currentColor"></path>
+                    </g>
+                  </svg>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    className="tabular-nums w-full"
+                    placeholder="Teléfono (9 dígitos)"
+                    pattern="[0-9]*"
+                    minLength={9}
+                    maxLength={9}
+                    title="Debe tener 9 dígitos"
+                    value={userData.telefono || ''}
+                    onChange={handleInputChange}
+                    disabled={!isEditingAccount}
+                  />
+                </label>
+              </fieldset>
+
+              <fieldset className="fieldset border-none rounded-md p-1 mb-3">
+                <label className="label pt-0 pb-0">
+                  <span className="label-text text-sm font-medium text-gray-700">Dirección</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="direccion"
+                  className="input w-full" 
+                  value={userData.direccion || ''}
+                  onChange={handleInputChange}
+                  disabled={!isEditingAccount} 
+                />
+              </fieldset>
+
+              <fieldset className="fieldset border-none rounded-md p-1 mb-3">
+                <label className="label pt-0 pb-0">
+                  <span className="label-text text-sm font-medium text-gray-700">Departamento</span>
+                </label>
+                <select 
+                  name="departamento_id"
+                  className="select w-full" 
+                  value={userData.departamento_id || ''}
+                  onChange={handleInputChange}
+                  disabled={!isEditingAccount}
+                >
+                  <option value="">Selecciona una opción</option>
+                  <option value="1">Lima</option>
+                  <option value="2">Arequipa</option>
+                  <option value="3">Cusco</option>
+                  <option value="4">La Libertad</option>
+                  <option value="5">Piura</option>
+                  <option value="6">Lambayeque</option>
+                  <option value="7">Junín</option>
+                  <option value="8">Puno</option>
+                  <option value="9">Ancash</option>
+                  <option value="10">Ica</option>
+                </select>
+              </fieldset>
+
+              <fieldset className="fieldset border-none rounded-md p-1 mb-3">
+                <label className="label pt-0 pb-0">
+                  <span className="label-text text-sm font-medium text-gray-700">Provincia</span>
+                </label>
+                <select 
+                  name="provincia_id"
+                  className="select w-full" 
+                  value={userData.provincia_id || ''}
+                  onChange={handleInputChange}
+                  disabled={!isEditingAccount}
+                >
+                  <option value="">Selecciona una opción</option>
+                  <option value="1">Lima</option>
+                  <option value="2">Callao</option>
+                  <option value="6">Arequipa</option>
+                  <option value="10">Cusco</option>
+                  <option value="14">Trujillo</option>
+                  <option value="18">Piura</option>
+                  <option value="22">Chiclayo</option>
+                  <option value="29">Puno</option>
+                  <option value="33">Huaraz</option>
+                  <option value="37">Ica</option>
+                </select>
+              </fieldset>
+            </div>
+
+            {/* Botones de la pestaña Cuenta */}
+            <div className="md:col-span-2 flex justify-end gap-2">
+              {!isEditingAccount ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditingAccount(true)}
+                  className="btn btn-sm bg-gray-700 hover:bg-gray-800 text-white"
+                >
+                  Editar
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleCancel('account')}
+                    className="btn btn-sm btn-ghost text-gray-700"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveAccount}
+                    disabled={savingAccount}
+                    className="btn btn-sm bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {savingAccount ? "Guardando..." : "Guardar"}
+                  </button>
+                </>
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* TAB 2: Salud y Emergencia */}
+        <input type="radio" name="account_tabs" className="tab" aria-label="Salud y Emergencia" />
+        <div className="tab-content bg-base-100 border-base-300 p-6">
+          <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <fieldset className="fieldset border-none rounded-md p-1">
+              <label className="label pt-0 pb-0">
+                <span className="label-text text-sm font-medium text-gray-700">Fecha de nacimiento</span>
+              </label>
+              <input 
+                type="date" 
+                name="fecha_nacimiento"
+                className="input w-full" 
+                value={userData.fecha_nacimiento ? userData.fecha_nacimiento.split('T')[0] : ''}
+                onChange={handleInputChange}
+                disabled={!isEditingHealth}
+              />
+            </fieldset>
+
+            <fieldset className="fieldset border-none rounded-md p-1">
+              <label className="label pt-0 pb-0">
+                <span className="label-text text-sm font-medium text-gray-700">Tipo de sangre</span>
+              </label>
+              <select 
+                name="tipo_sangre"
+                className="select w-full" 
+                value={userData.tipo_sangre || ''}
+                onChange={handleInputChange}
+                disabled={!isEditingHealth}
+              >
+                <option value="">Selecciona una opción</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </fieldset>
+
+            <fieldset className="md:col-span-1 fieldset border-none rounded-md p-1">
+              <label className="label pt-0 pb-0">
+                <span className="label-text text-sm font-medium text-gray-700">Alergias</span>
+              </label>
+              <textarea 
+                name="alergias"
+                className="textarea w-full" 
+                placeholder="Especifica alergias..."
+                value={userData.alergias || ''}
+                onChange={handleInputChange}
+                disabled={!isEditingHealth}
+              />
+            </fieldset>
+
+            <fieldset className="md:col-span-1 fieldset border-none rounded-md p-1">
+              <label className="label pt-0 pb-0">
+                <span className="label-text text-sm font-medium text-gray-700">Condiciones médicas</span>
+              </label>
+              <textarea 
+                name="condiciones_medicas"
+                className="textarea w-full" 
+                placeholder="Condiciones médicas..."
+                value={userData.condiciones_medicas || ''}
+                onChange={handleInputChange}
+                disabled={!isEditingHealth}
+              />
+            </fieldset>
+
+            <fieldset className="md:col-span-2 fieldset border-none rounded-md p-1">
+              <label className="label pt-0 pb-0">
+                <span className="label-text text-sm font-medium text-gray-700">Medicamentos actuales</span>
+              </label>
+              <textarea 
+                name="medicamentos_actuales"
+                className="textarea w-full" 
+                placeholder="Medicaciones actuales..."
+                value={userData.medicamentos_actuales || ''}
+                onChange={handleInputChange}
+                disabled={!isEditingHealth}
+              />
+            </fieldset>
+
+            <fieldset className="fieldset border-none rounded-md p-1">
+              <label className="label pt-0 pb-0">
+                <span className="label-text text-sm font-medium text-gray-700">Nombre contacto de emergencia</span>
+              </label>
+              <input 
+                type="text" 
+                name="contacto_emergencia_nombre"
+                className="input w-full" 
+                value={userData.contacto_emergencia_nombre || ''}
+                onChange={handleInputChange}
+                disabled={!isEditingHealth}
+              />
+            </fieldset>
+
+            <fieldset className="fieldset border-none rounded-md p-1">
+              <label className="label pt-0 pb-0">
+                <span className="label-text text-sm font-medium text-gray-700">Teléfono contacto de emergencia</span>
+              </label>
+              <label className="input validator w-full">
+                <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                  <g fill="none">
+                    <path d="M7.25 11.5C6.83579 11.5 6.5 11.8358 6.5 12.25C6.5 12.6642 6.83579 13 7.25 13H8.75C9.16421 13 9.5 12.6642 9.5 12.25C9.5 11.8358 9.16421 11.5 8.75 11.5H7.25Z" fill="currentColor"></path>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M6 1C4.61929 1 3.5 2.11929 3.5 3.5V12.5C3.5 13.8807 4.61929 15 6 15H10C11.3807 15 12.5 13.8807 12.5 12.5V3.5C12.5 2.11929 11.3807 1 10 1H6ZM10 2.5H9.5V3C9.5 3.27614 9.27614 3.5 9 3.5H7C6.72386 3.5 6.5 3.27614 6.5 3V2.5H6C5.44771 2.5 5 2.94772 5 3.5V12.5C5 13.0523 5.44772 13.5 6 13.5H10C10.5523 13.5 11 13.0523 11 12.5V3.5C11 2.94772 10.5523 2.5 10 2.5Z" fill="currentColor"></path>
+                  </g>
+                </svg>
+                <input
+                  type="tel"
+                  name="contacto_emergencia_telefono"
+                  className="tabular-nums w-full"
+                  placeholder="Teléfono (9 dígitos)"
+                  pattern="[0-9]*"
+                  minLength={9}
+                  maxLength={9}
+                  title="Debe tener 9 dígitos"
+                  value={userData.contacto_emergencia_telefono || ''}
+                  onChange={handleInputChange}
+                  disabled={!isEditingHealth}
+                />
+              </label>
+            </fieldset>
+
+            <fieldset className="fieldset border-none rounded-md p-1">
+              <label className="label pt-0 pb-0">
+                <span className="label-text text-sm font-medium text-gray-700">Seguro médico</span>
+              </label>
+              <input 
+                type="text" 
+                name="seguro_medico"
+                className="input w-full" 
+                value={userData.seguro_medico || ''}
+                onChange={handleInputChange}
+                disabled={!isEditingHealth}
+              />
+            </fieldset>
+
+            <fieldset className="fieldset border-none rounded-md p-1">
+              <label className="label pt-0 pb-0">
+                <span className="label-text text-sm font-medium text-gray-700">Póliza</span>
+              </label>
+              <input 
+                type="text" 
+                name="numero_poliza_seguro"
+                className="input w-full" 
+                value={userData.numero_poliza_seguro || ''}
+                onChange={handleInputChange}
+                disabled={!isEditingHealth}
+              />
+            </fieldset>
+
+            {/* Botones de la pestaña Salud (INDEPENDIENTES) */}
+            <div className="md:col-span-2 flex justify-end gap-2 mt-4">
+              {!isEditingHealth ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditingHealth(true)}
+                  className="btn btn-sm bg-gray-700 hover:bg-gray-800 text-white"
+                >
+                  Editar Detalles Médicos
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleCancel('health')}
+                    className="btn btn-sm btn-ghost text-gray-700"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveHealth}
+                    disabled={savingHealth}
+                    className="btn btn-sm bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {savingHealth ? "Guardando..." : "Guardar Cambios"}
+                  </button>
+                </>
+              )}
+            </div>
+          </form>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const MedicalHistoryContent = () => (
   <div>
