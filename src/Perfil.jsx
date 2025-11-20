@@ -1,3 +1,21 @@
+// -----------------------------------------------------------------------------
+// Perfil.jsx
+// -----------------------------------------------------------------------------
+// Este archivo define la página de Perfil del paciente, compuesta por un menú
+// lateral y múltiples secciones dinámicas (Dashboard, Detalles de Cuenta,
+// Historial Médico, Mis Citas, Pagos y Facturas, Valoraciones).
+// Cada sección está encapsulada en un componente independiente que maneja su
+// propio estado y lógica de carga desde el backend.
+// Se utilizan hooks de React (useState, useEffect, useRef) para gestionar:
+//  - Sesión del usuario
+//  - Carga de datos asíncronos vía axios
+//  - Modo edición de formularios
+//  - Timers y formateo de fechas
+//  - Almacenamiento en localStorage
+// Diseño: Tailwind + DaisyUI para estilos y componentes visuales.
+// Iconografía: lucide-react.
+// -----------------------------------------------------------------------------
+// IMPORTS DE ICONOS Y LIBRERÍAS
 import {
   Search,
   Menu,
@@ -10,19 +28,23 @@ import {
   FileText,
   Star,
   History
-} from "lucide-react";
-import "./App.css";
-import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+} from "lucide-react"; // Iconos SVG reutilizables
+import "./App.css"; // Hoja de estilos global / específicos de la app
+import axios from "axios"; // Cliente HTTP para llamadas al backend
+import { Link, useNavigate } from "react-router-dom"; // Navegación SPA y enlaces
+import { useEffect, useState, useRef } from "react"; // Hooks fundamentales de React
 
 function Perfil() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState("");
-  const [activeSection, setActiveSection] = useState("Dashboard");
-  const navigate = useNavigate();
+  // ---------------------------------------------------------------------------
+  // ESTADOS PRINCIPALES DE LA PÁGINA
+  // ---------------------------------------------------------------------------
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Indica si hay sesión activa
+  const [userName, setUserName] = useState(""); // Nombre (visual) del usuario logueado
+  const [activeSection, setActiveSection] = useState("Dashboard"); // Sección actual del menú
+  const navigate = useNavigate(); // Hook para redirecciones programáticas
 
-  // Verificar si el usuario está logueado y obtener datos
+  // Verificar si el usuario está logueado y obtener datos iniciales.
+  // Aquí solo marca sesión y setea un nombre dummy (mejorable: usar datos reales).
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (user) {
@@ -31,7 +53,7 @@ function Perfil() {
     }
   }, []);
 
-  // Función para cerrar sesión
+  // Cierra sesión: limpia localStorage, resetea estados locales y redirige.
   const handleLogout = () => {
     localStorage.removeItem("user");
     setIsLoggedIn(false);
@@ -39,7 +61,8 @@ function Perfil() {
     navigate("/login");
   };
 
-  // Renderizar contenido según la sección activa
+  // Renderiza dinámicamente el contenido principal según la sección seleccionada.
+  // Utiliza un switch para devolver el componente correspondiente.
   const renderSectionContent = () => {
     switch(activeSection) {
       case "Dashboard":
@@ -61,6 +84,7 @@ function Perfil() {
 
   return (
     <div className="min-h-screen bg-white font-['Rubik'] text-[#0A3C3F]">
+      {/* Layout principal: contiene navbar, título y área de secciones con menú lateral */}
       {/* NAVBAR */}
       <div className="pt-4 md:pt-6 lg:pt-8">
         <div className="mx-auto px-4 max-w-7xl">
@@ -75,6 +99,7 @@ function Perfil() {
             </div>
 
             <div className="navbar-center hidden lg:flex">
+              {/* Menú superior principal en pantallas grandes */}
               <ul className="menu menu-horizontal px-1">
                 <li>
                   <Link
@@ -112,6 +137,7 @@ function Perfil() {
             </div>
 
             <div className="navbar-end">
+              {/* Dependiendo de sesión: muestra botón login o icono de perfil */}
               {!isLoggedIn ? (
                 <div className="hidden lg:flex items-center space-x-4">
                   <button className="text-white hover:text-[#A9E8E0] p-2">
@@ -139,7 +165,7 @@ function Perfil() {
                 </div>
               )}
 
-              {/* Dropdown móvil */}
+              {/* Dropdown móvil: menú colapsable para pantallas pequeñas */}
               <div className="dropdown dropdown-end lg:hidden">
                 <button
                   tabIndex={0}
@@ -223,15 +249,15 @@ function Perfil() {
         </div>
       </div>
 
-      {/* Titulo de la página */}
+      {/* Título de la página del perfil */}
       <div className="text-center mt-12 mb-8">
         <h1 className="text-4xl font-bold text-gray-700">Mi Perfil</h1>
       </div>
 
-      {/* Contenido del perfil */}
+      {/* Contenido del perfil: distribución flexible con menú lateral y sección dinámica */}
       <section className="flex min-h-[70vh]">
         <div className="flex flex-col lg:flex-row gap-8 w-full max-w-6xl mx-auto px-4">
-          {/* Menu vertical */}
+          {/* Menú vertical: lista de secciones clicables */}
           <ul className="menu border border-[#D3D3D3] rounded-box w-full lg:w-64 mt-0 h-fit">
             <li className="border-b border-[#D3D3D3]">
               <button
@@ -291,7 +317,7 @@ function Perfil() {
             </li>
           </ul>
 
-          {/* Contenido principal - Se renderiza dinámicamente */}
+          {/* Contenido principal: componente según sección activa */}
           <div className="flex-1 mt-0">
             {renderSectionContent()}
           </div>
@@ -301,20 +327,34 @@ function Perfil() {
   );
 }
 
-// Componentes para cada sección
+// ---------------------------------------------------------------------------
+// COMPONENTE: DashboardContent
+// Muestra saludo personalizado, tarjetas rápidas (Cuenta, Pagos), banner
+// promocional y bloque de próxima cita con cuenta regresiva.
+// Estados manejados:
+//  - greetingName: Nombre a mostrar (prop + localStorage)
+//  - loadingAppt / errorAppt: Estado de carga de próxima cita
+//  - nextAppt: Objeto con información de cita y doctor
+//  - countdown: Tiempo faltante calculado por intervalo
+// Efectos:
+//  - Carga de nombre real desde localStorage
+//  - Petición al backend para próxima cita
+//  - Intervalo 1s para actualizar countdown mientras exista cita futura
+// Helpers: formatFecha y formatHora para legibilidad
+// ---------------------------------------------------------------------------
 const DashboardContent = ({ userName }) => {
-  const [greetingName, setGreetingName] = useState(userName || "");
-  const [loadingAppt, setLoadingAppt] = useState(true);
-  const [errorAppt, setErrorAppt] = useState("");
-  const [nextAppt, setNextAppt] = useState(null); // { proximaCita, doctor }
-  const [countdown, setCountdown] = useState({
+  const [greetingName, setGreetingName] = useState(userName || ""); // Nombre mostrado
+  const [loadingAppt, setLoadingAppt] = useState(true); // Indicador de carga de cita
+  const [errorAppt, setErrorAppt] = useState(""); // Mensaje de error si falla petición
+  const [nextAppt, setNextAppt] = useState(null); // Datos de próxima cita y doctor
+  const [countdown, setCountdown] = useState({ // Tiempo restante para la cita
     days: 0,
     hours: 0,
     minutes: 0,
     seconds: 0,
   });
 
-  // Leer nombre real desde localStorage si está disponible
+  // Carga nombre real desde localStorage (si existe) reemplazando prop inicial.
   useEffect(() => {
     try {
       const raw = localStorage.getItem("user");
@@ -329,7 +369,7 @@ const DashboardContent = ({ userName }) => {
     }
   }, [userName]);
 
-  // Obtener próxima cita
+  // Petición para obtener próxima cita del paciente autenticado.
   useEffect(() => {
     const fetchNextAppointment = async () => {
       setLoadingAppt(true);
@@ -369,7 +409,7 @@ const DashboardContent = ({ userName }) => {
     fetchNextAppointment();
   }, []);
 
-  // Actualizar countdown cada segundo cuando hay una cita
+  // Actualiza cuenta regresiva cada segundo solo si hay fecha de cita válida.
   useEffect(() => {
     if (!nextAppt?.proximaCita?.fecha_hora) return;
 
@@ -402,7 +442,7 @@ const DashboardContent = ({ userName }) => {
     return () => clearInterval(id);
   }, [nextAppt]);
 
-  // Helpers de formato
+  // Helpers de formato de fecha y hora para mostrar datos amigables.
   const formatFecha = (datetimeStr) => {
     if (!datetimeStr) return "";
     const d = new Date(datetimeStr.replace(" ", "T"));
@@ -415,7 +455,7 @@ const DashboardContent = ({ userName }) => {
     });
   };
 
-  // Devuelve hora en formato 12 horas con sufijo AM/PM en mayúsculas
+  // Devuelve hora en formato 12h con sufijo AM/PM.
   const formatHora = (datetimeStr) => {
     if (!datetimeStr) return ""; // Si no hay string, devuelve vacío
     const d = new Date(datetimeStr.replace(" ", "T")); // Convierte "YYYY-MM-DD HH:mm:ss" a Date
@@ -428,9 +468,9 @@ const DashboardContent = ({ userName }) => {
 
   const doctorNombre = nextAppt?.doctor
     ? `${nextAppt.doctor.nombres} ${nextAppt.doctor.apellidos}`.trim()
-    : "";
+    : ""; // Nombre completo del doctor o cadena vacía
 
-  const hayCita = Boolean(nextAppt?.proximaCita);
+  const hayCita = Boolean(nextAppt?.proximaCita); // Flag fácil para condicionales
 
   return (
     <>
@@ -590,20 +630,30 @@ const DashboardContent = ({ userName }) => {
 };
 
 
+// ---------------------------------------------------------------------------
+// COMPONENTE: AccountDetailsContent
+// Permite ver y editar información de perfil del paciente en dos áreas:
+//  1) Cuenta y contacto (nombre, email, teléfono, ubicación, género)
+//  2) Salud y emergencia (fecha nacimiento, sangre, alergias, condiciones, etc.)
+// Se gestionan dos modos de edición independientes: isEditingAccount e isEditingHealth
+// originalDataRef almacena el estado original para poder cancelar cambios.
+// Las funciones handleSaveAccount y handleSaveHealth envían PUT al backend.
+// Se muestran mensajes de éxito/error según resultado.
+// ---------------------------------------------------------------------------
 const AccountDetailsContent = () => {
-  const [userData, setUserData] = useState(null);
-  const [isEditingAccount, setIsEditingAccount] = useState(false);
-  const [isEditingHealth, setIsEditingHealth] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [savingAccount, setSavingAccount] = useState(false);
-  const [savingHealth, setSavingHealth] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [userData, setUserData] = useState(null); // Datos completos del usuario
+  const [isEditingAccount, setIsEditingAccount] = useState(false); // Modo edición sección cuenta
+  const [isEditingHealth, setIsEditingHealth] = useState(false); // Modo edición sección salud
+  const [loading, setLoading] = useState(true); // Estado de carga inicial
+  const [savingAccount, setSavingAccount] = useState(false); // Guardando datos cuenta
+  const [savingHealth, setSavingHealth] = useState(false); // Guardando datos salud
+  const [successMessage, setSuccessMessage] = useState(""); // Feedback positivo
+  const [errorMessage, setErrorMessage] = useState(""); // Feedback de error
   
-  const token = localStorage.getItem("token");
-  const originalDataRef = useRef(null);
+  const token = localStorage.getItem("token"); // Token JWT para autenticación
+  const originalDataRef = useRef(null); // Referencia inmutable a datos originales
 
-  // Cargar datos del perfil
+  // Carga inicial del perfil desde backend. Almacena versión original para revertir.
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -629,7 +679,7 @@ const AccountDetailsContent = () => {
     setUserData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Guardar sección Cuenta y Contacto
+  // Guarda cambios de la sección Cuenta y Contacto (PUT parcial).
   const handleSaveAccount = async () => {
     try {
       setSavingAccount(true);
@@ -662,7 +712,7 @@ const AccountDetailsContent = () => {
     }
   };
 
-  // Guardar sección Salud y Emergencia
+  // Guarda cambios de la sección Salud y Emergencia (PUT parcial).
   const handleSaveHealth = async () => {
     try {
       setSavingHealth(true);
@@ -720,8 +770,8 @@ const AccountDetailsContent = () => {
     return <div className="text-red-500">Error al cargar el perfil</div>;
   }
 
-  const fullName = `${userData.nombres || ''} ${userData.apellidos || ''}`.trim();
-  const avatarSrc = userData.foto_perfil || "https://img.daisyui.com/images/profile/demo/gordon@192.webp";
+  const fullName = `${userData.nombres || ''} ${userData.apellidos || ''}`.trim(); // Nombre completo
+  const avatarSrc = userData.foto_perfil || "https://img.daisyui.com/images/profile/demo/gordon@192.webp"; // Imagen fallback
 
   return (
     <div className="space-y-4">
@@ -1142,97 +1192,363 @@ const AccountDetailsContent = () => {
   );
 };
 
-const MedicalHistoryContent = () => (
-  <div>
-    <h2 className="text-2xl font-bold text-gray-700 mb-6">Historial Médico</h2>
-    <div className="card bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+// ---------------------------------------------------------------------------
+// COMPONENTE: MedicalHistoryContent
+// Obtiene y muestra el historial médico del paciente (consultas, eventos).
+// Estados:
+//  - historial: array de registros médicos
+//  - loading: control de spinner de carga
+// Efecto: petición GET al montar para recuperar historial.
+// Renderizado condicional: lista vacía vs registros disponibles.
+// ---------------------------------------------------------------------------
+const MedicalHistoryContent = () => {
+  const [historial, setHistorial] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    const fetchHistorial = async () => {
+      try {
+        const res = await axios.get("http://localhost:3001/api/pacientes/historial", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setHistorial(res.data);
+      } catch (err) {
+        console.error("Error al cargar historial:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchHistorial();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="loading loading-spinner loading-lg text-gray-700"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-700 mb-6">Historial Médico</h2>
+      
       <div className="flex items-center mb-4">
         <History size={24} className="text-gray-600 mr-3" />
-        <h3 className="text-lg font-semibold">Consultas Recientes</h3>
+        <h3 className="text-lg font-semibold text-gray-700">Consultas Recientes</h3>
       </div>
-      <div className="space-y-4">
-        <div className="border-b pb-3">
-          <p className="font-medium">Consulta General - Dra. López</p>
-          <p className="text-sm text-gray-600">15 Oct 2024 • Revisión anual</p>
-        </div>
-        <div className="border-b pb-3">
-          <p className="font-medium">Dermatología - Dr. García</p>
-          <p className="text-sm text-gray-600">1 Sep 2024 • Control de lunar</p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
 
-const MyAppointmentsContent = () => (
-  <div>
-    <h2 className="text-2xl font-bold text-gray-700 mb-6">Mis Citas</h2>
-    <div className="grid grid-cols-1 gap-6">
-      <div className="card bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <div className="flex items-center mb-4">
-          <Calendar size={24} className="text-gray-600 mr-3" />
-          <h3 className="text-lg font-semibold">Próximas Citas</h3>
-        </div>
-        <div className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="font-medium">Cardiología - Dr. Martínez</p>
-            <p className="text-sm text-gray-600">12 Nov 2024 • 10:00 AM</p>
-            <button className="btn btn-sm bg-blue-600 text-white mt-2">Ver detalles</button>
-          </div>
-        </div>
-      </div>
+      <ul className="list bg-white border border-gray-200 rounded-xl shadow-sm">
+        <li className="p-4 pb-2 text-xs opacity-60 tracking-wide text-gray-600">Historial médico</li>
+        
+        {historial.length === 0 ? (
+          <li className="list-row">
+            <div className="text-gray-600 p-4">No hay registros en el historial médico</div>
+          </li>
+        ) : (
+          historial.map((item) => (
+            <li key={item.id} className="list-row">
+              <div className="list-col">
+                <div className="text-sm font-medium text-gray-700">
+                  {item.titulo} - {item.doctor_nombres} {item.doctor_apellidos}
+                </div>
+                <div className="text-xs uppercase font-semibold opacity-60 text-gray-600">
+                  {new Date(item.fecha_evento).toLocaleDateString('es-ES', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })} • {item.tipo}
+                </div>
+              </div>
+              <div className="list-col text-xs text-gray-600 max-w-xs">
+                {item.descripcion}
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
     </div>
-  </div>
-);
+  );
+};
 
-const PaymentsContent = () => (
-  <div>
-    <h2 className="text-2xl font-bold text-gray-700 mb-6">Pagos y Facturas</h2>
-    <div className="grid grid-cols-1 gap-6">
-      <div className="card bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <div className="flex items-center mb-4">
-          <CircleDollarSign size={24} className="text-gray-600 mr-3" />
-          <h3 className="text-lg font-semibold">Facturas Recientes</h3>
-        </div>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center border-b pb-3">
-            <div>
-              <p className="font-medium">Consulta Dra. López</p>
-              <p className="text-sm text-gray-600">15 Oct 2024</p>
-            </div>
-            <div className="text-right">
-              <p className="font-medium">€85.00</p>
-              <p className="text-sm text-green-600">Pagado</p>
-            </div>
-          </div>
-        </div>
+// ---------------------------------------------------------------------------
+// COMPONENTE: MyAppointmentsContent
+// Lista todas las citas del paciente, indicando fecha/hora, especialidad,
+// motivo y estado (confirmada, pendiente, etc.). Incluye helpers de formato.
+// Estados: citas (array), loading (spinner). Carga inicial via GET.
+// ---------------------------------------------------------------------------
+const MyAppointmentsContent = () => {
+  const [citas, setCitas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    const fetchCitas = async () => {
+      try {
+        const res = await axios.get("http://localhost:3001/api/pacientes/citas", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setCitas(res.data);
+      } catch (err) {
+        console.error("Error al cargar citas:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchCitas();
+  }, [token]);
+
+  const formatFecha = (datetimeStr) => {
+    if (!datetimeStr) return "";
+    const d = new Date(datetimeStr.replace(" ", "T"));
+    return d.toLocaleDateString("es-ES", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const formatHora = (datetimeStr) => {
+    if (!datetimeStr) return "";
+    const d = new Date(datetimeStr.replace(" ", "T"));
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const suffix = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${suffix}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="loading loading-spinner loading-lg text-gray-700"></div>
       </div>
-    </div>
-  </div>
-);
+    );
+  }
 
-const ReviewsContent = () => (
-  <div>
-    <h2 className="text-2xl font-bold text-gray-700 mb-6">Valoraciones</h2>
-    <div className="card bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-700 mb-6">Mis Citas</h2>
+      
+      <div className="flex items-center mb-4">
+        <Calendar size={24} className="text-gray-600 mr-3" />
+        <h3 className="text-lg font-semibold text-gray-700">Todas las Citas</h3>
+      </div>
+
+      <ul className="list bg-white border border-gray-200 rounded-xl shadow-sm">
+        <li className="p-4 pb-2 text-xs opacity-60 tracking-wide text-gray-600">
+          {citas.filter(c => new Date(c.fecha_hora) > new Date()).length} próximas citas
+        </li>
+        
+        {citas.length === 0 ? (
+          <li className="list-row">
+            <div className="text-gray-600 p-4">No tienes citas programadas</div>
+          </li>
+        ) : (
+          citas.map((cita) => (
+            <li key={cita.id} className="list-row">
+              <div className="list-col">
+                <div className="text-sm font-medium text-gray-700">
+                  {cita.especialidad} - {cita.doctor_nombres} {cita.doctor_apellidos}
+                </div>
+                <div className="text-xs uppercase font-semibold opacity-60 text-gray-600">
+                  {formatFecha(cita.fecha_hora)} • {formatHora(cita.fecha_hora)}
+                </div>
+                <div className="text-xs text-gray-600 mt-1">
+                  {cita.motivo} • {cita.tipo_consulta}
+                </div>
+              </div>
+              <div className="list-col text-right">
+                <span className={`badge badge-sm ${cita.estado === 'confirmada' ? 'badge-success' : 
+                  cita.estado === 'pendiente' ? 'badge-warning' : 'badge-ghost'}`}>
+                  {cita.estado}
+                </span>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// COMPONENTE: PaymentsContent
+// Muestra historial de pagos/facturas asociados a citas. Presenta número de
+// factura, método, monto y estado (pagado, pendiente, error).
+// Estados: pagos (array), loading (spinner). Carga inicial via GET.
+// ---------------------------------------------------------------------------
+const PaymentsContent = () => {
+  const [pagos, setPagos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    const fetchPagos = async () => {
+      try {
+        const res = await axios.get("http://localhost:3001/api/pacientes/pagos", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setPagos(res.data);
+      } catch (err) {
+        console.error("Error al cargar pagos:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchPagos();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="loading loading-spinner loading-lg text-gray-700"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-700 mb-6">Pagos y Facturas</h2>
+      
+      <div className="flex items-center mb-4">
+        <CircleDollarSign size={24} className="text-gray-600 mr-3" />
+        <h3 className="text-lg font-semibold text-gray-700">Historial de Pagos</h3>
+      </div>
+
+      <ul className="list bg-white border border-gray-200 rounded-xl shadow-sm">
+        <li className="p-4 pb-2 text-xs opacity-60 tracking-wide text-gray-600">
+          Total: {pagos.length} transacciones
+        </li>
+        
+        {pagos.length === 0 ? (
+          <li className="list-row">
+            <div className="text-gray-600 p-4">No hay registros de pagos</div>
+          </li>
+        ) : (
+          pagos.map((pago) => (
+            <li key={pago.id} className="list-row">
+              <div className="list-col">
+                <div className="text-sm font-medium text-gray-700">
+                  {pago.especialidad} - {pago.doctor_nombres} {pago.doctor_apellidos}
+                </div>
+                <div className="text-xs uppercase font-semibold opacity-60 text-gray-600">
+                  {new Date(pago.fecha_emision || pago.fecha_pago).toLocaleDateString('es-ES')}
+                </div>
+                <div className="text-xs text-gray-600">
+                  {pago.numero_factura || 'Sin factura'} • {pago.metodo_pago}
+                </div>
+              </div>
+              <div className="list-col text-right">
+                <div className="text-sm font-medium text-gray-700">
+                  S/ {parseFloat(pago.monto).toFixed(2)}
+                </div>
+                <div className="mt-1">
+                  <span className={`badge badge-sm ${pago.estado === 'pagado' ? 'badge-success' : 
+                    pago.estado === 'pendiente' ? 'badge-warning' : 'badge-error'}`}>
+                    {pago.estado}
+                  </span>
+                </div>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// COMPONENTE: ReviewsContent
+// Lista las valoraciones realizadas a doctores: puntuación (1-5 estrellas),
+// fecha y comentario. Genera visual de estrellas según puntuación.
+// Estados: valoraciones, loading. Petición inicial via GET.
+// ---------------------------------------------------------------------------
+const ReviewsContent = () => {
+  const [valoraciones, setValoraciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    const fetchValoraciones = async () => {
+      try {
+        const res = await axios.get("http://localhost:3001/api/pacientes/valoraciones", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setValoraciones(res.data);
+      } catch (err) {
+        console.error("Error al cargar valoraciones:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchValoraciones();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="loading loading-spinner loading-lg text-gray-700"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-700 mb-6">Valoraciones</h2>
+      
       <div className="flex items-center mb-4">
         <Star size={24} className="text-gray-600 mr-3" />
-        <h3 className="text-lg font-semibold">Mis Valoraciones</h3>
+        <h3 className="text-lg font-semibold text-gray-700">Mis Valoraciones</h3>
       </div>
-      <div className="space-y-4">
-        <div className="border-b pb-4">
-          <div className="flex items-center mb-2">
-            <div className="flex text-yellow-400">
-              {"★".repeat(5)}
-            </div>
-            <span className="ml-2 text-sm text-gray-600">15 Oct 2024</span>
-          </div>
-          <p className="font-medium mb-1">Dra. López</p>
-          <p className="text-sm text-gray-700">Excelente atención, muy profesional y amable.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
 
+      <ul className="list bg-white border border-gray-200 rounded-xl shadow-sm">
+        <li className="p-4 pb-2 text-xs opacity-60 tracking-wide text-gray-600">
+          {valoraciones.length} valoraciones realizadas
+        </li>
+        
+        {valoraciones.length === 0 ? (
+          <li className="list-row">
+            <div className="text-gray-600 p-4">No has realizado valoraciones aún</div>
+          </li>
+        ) : (
+          valoraciones.map((valoracion) => (
+            <li key={valoracion.id} className="list-row">
+              <div className="list-col">
+                <div className="text-sm font-medium text-gray-700">
+                  {valoracion.doctor_nombres} {valoracion.doctor_apellidos}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="rating rating-sm">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <div
+                        key={star}
+                        className={`mask mask-star ${star <= valoracion.puntuacion ? 'bg-yellow-400' : 'bg-gray-300'}`}
+                        aria-label={`${star} star`}
+                      ></div>
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-600">
+                    {new Date(valoracion.fecha).toLocaleDateString('es-ES')}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-600 mt-2">
+                  {valoracion.comentario}
+                </div>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  );
+};
+
+// Exportación por defecto del componente principal de la página.
 export default Perfil;
