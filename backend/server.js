@@ -802,6 +802,855 @@ app.get("/api/verify-token", (req, res) => {
 });
 
 // ================================
+// 🧩 RUTAS DE PERFIL DE DOCTOR
+// ================================
+
+// ================================
+// 🧩 RUTA: Obtener perfil completo del doctor
+// ================================
+// Obtiene el perfil del doctor autenticado.
+// Combina datos básicos (usuarios) con info profesional (doctores) y especialidades.
+app.get("/api/doctores/profile", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const sql = `
+    SELECT 
+      u.id, u.email, u.nombres, u.apellidos, u.tipo,
+      d.id as doctor_id, d.telefono, d.fecha_nacimiento, d.genero, d.foto_perfil,
+      d.consultorio_direccion, d.departamento_id, d.provincia_id,
+      d.descripcion, d.numero_licencia, d.experiencia, d.formacion,
+      d.certificaciones, d.costo_consulta, d.activo,
+      dep.nombre as departamento_nombre,
+      prov.nombre as provincia_nombre
+    FROM usuarios u
+    LEFT JOIN doctores d ON u.id = d.usuario_id
+    LEFT JOIN departamentos dep ON d.departamento_id = dep.id
+    LEFT JOIN provincias prov ON d.provincia_id = prov.id
+    WHERE u.id = ? AND u.tipo = 'doctor'
+  `;
+
+  connection.query(sql, [decoded.id], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener perfil del doctor:", err);
+      return res.status(500).json({ message: "Error al obtener perfil" });
+    }
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Perfil no encontrado" });
+    }
+
+    // Obtener especialidades del doctor
+    const doctorId = rows[0].doctor_id;
+    const sqlEspecialidades = `
+      SELECT e.id, e.nombre, de.es_principal
+      FROM doctor_especialidad de
+      JOIN especialidades e ON de.especialidad_id = e.id
+      WHERE de.doctor_id = ?
+      ORDER BY de.es_principal DESC
+    `;
+
+    connection.query(sqlEspecialidades, [doctorId], (err2, especialidades) => {
+      if (err2) {
+        console.error("❌ Error al obtener especialidades:", err2);
+        return res.status(500).json({ message: "Error al obtener especialidades" });
+      }
+
+      res.status(200).json({
+        ...rows[0],
+        especialidades: especialidades || []
+      });
+    });
+  });
+});
+
+// ================================
+// 🧩 RUTA: Actualizar perfil del doctor
+// ================================
+// Actualiza datos en usuarios y en doctores.
+// NOTA: Valida por JWT el usuario actual, no permite editar otros perfiles.
+app.put("/api/doctores/profile", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const {
+    nombres, apellidos, email, telefono, fecha_nacimiento, genero,
+    consultorio_direccion, departamento_id, provincia_id,
+    descripcion, experiencia, formacion, certificaciones, costo_consulta
+  } = req.body;
+
+  // Función helper para convertir valores vacíos a null
+  const emptyToNull = (val) => (val === "" || val === undefined ? null : val);
+
+  try {
+    // 1) Actualizar datos básicos en tabla usuarios
+    const updateUsuarioQuery = `
+      UPDATE usuarios 
+      SET nombres = ?, apellidos = ?, email = ?
+      WHERE id = ? AND tipo = 'doctor'
+    `;
+    
+    connection.query(
+      updateUsuarioQuery,
+      [nombres, apellidos, email, decoded.id],
+      (err) => {
+        if (err) {
+          console.error("❌ Error al actualizar usuario:", err);
+          return res.status(500).json({ message: "Error al actualizar datos de usuario" });
+        }
+
+        // 2) Actualizar datos profesionales en tabla doctores
+        const updateDoctorQuery = `
+          UPDATE doctores SET 
+            telefono = ?, fecha_nacimiento = ?, genero = ?,
+            consultorio_direccion = ?, departamento_id = ?, provincia_id = ?,
+            descripcion = ?, experiencia = ?, formacion = ?,
+            certificaciones = ?, costo_consulta = ?
+          WHERE usuario_id = ?
+        `;
+        
+        connection.query(
+          updateDoctorQuery,
+          [
+            emptyToNull(telefono), 
+            emptyToNull(fecha_nacimiento), 
+            emptyToNull(genero),
+            emptyToNull(consultorio_direccion), 
+            emptyToNull(departamento_id), 
+            emptyToNull(provincia_id),
+            emptyToNull(descripcion), 
+            emptyToNull(experiencia), 
+            emptyToNull(formacion),
+            emptyToNull(certificaciones), 
+            emptyToNull(costo_consulta), 
+            decoded.id
+          ],
+          (err2) => {
+            if (err2) {
+              console.error("❌ Error al actualizar doctor:", err2);
+              return res.status(500).json({ message: "Error al actualizar datos profesionales" });
+            }
+            res.status(200).json({ message: "✅ Perfil actualizado con éxito" });
+          }
+        );
+      }
+    );
+  } catch (error) {
+    console.error("❌ Error en actualización:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+
+// ================================
+// 🧩 RUTA: Citas del doctor
+// ================================
+// Listado de citas del doctor autenticado, con info del paciente.
+app.get("/api/doctores/citas", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const sql = `
+    SELECT 
+      c.id,
+      c.fecha_hora,
+      c.duracion_minutos,
+      c.tipo_consulta,
+      c.estado,
+      c.motivo,
+      c.sintomas,
+      c.notas_doctor,
+      c.diagnostico,
+      c.tratamiento,
+      up.nombres as paciente_nombres,
+      up.apellidos as paciente_apellidos,
+      p.telefono as paciente_telefono
+    FROM citas c
+    JOIN doctores d ON c.doctor_id = d.id
+    JOIN pacientes p ON c.paciente_id = p.id
+    JOIN usuarios up ON p.usuario_id = up.id
+    WHERE d.usuario_id = ?
+    ORDER BY c.fecha_hora DESC
+  `;
+
+  connection.query(sql, [decoded.id], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener citas del doctor:", err);
+      return res.status(500).json({ message: "Error al obtener citas" });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// ================================
+// 🧩 RUTA: Próxima cita del doctor
+// ================================
+// Próxima cita del doctor autenticado con datos del paciente.
+app.get("/api/doctores/proxima-cita", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const sql = `
+    SELECT
+      c.id AS cita_id,
+      c.fecha_hora,
+      c.duracion_minutos,
+      c.tipo_consulta,
+      c.estado,
+      c.motivo,
+      c.sintomas,
+      p.id AS paciente_id,
+      up.nombres AS paciente_nombres,
+      up.apellidos AS paciente_apellidos,
+      p.telefono AS paciente_telefono
+    FROM citas c
+    JOIN doctores d ON c.doctor_id = d.id
+    JOIN pacientes p ON c.paciente_id = p.id
+    JOIN usuarios up ON p.usuario_id = up.id
+    WHERE d.usuario_id = ?
+      AND c.fecha_hora > NOW()
+      AND c.estado IN ('pendiente','confirmada','en_curso')
+    ORDER BY c.fecha_hora ASC
+    LIMIT 1
+  `;
+
+  connection.query(sql, [decoded.id], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener próxima cita:", err);
+      return res.status(500).json({ message: "Error al obtener próxima cita" });
+    }
+
+    if (rows.length === 0) {
+      return res.status(200).json({ proximaCita: null });
+    }
+
+    const r = rows[0];
+    res.status(200).json({
+      proximaCita: {
+        id: r.cita_id,
+        fecha_hora: r.fecha_hora,
+        duracion_minutos: r.duracion_minutos,
+        tipo_consulta: r.tipo_consulta,
+        estado: r.estado,
+        motivo: r.motivo,
+        sintomas: r.sintomas
+      },
+      paciente: {
+        id: r.paciente_id,
+        nombres: r.paciente_nombres,
+        apellidos: r.paciente_apellidos,
+        telefono: r.paciente_telefono
+      }
+    });
+  });
+});
+
+// ================================
+// 🧩 RUTA: Actualizar notas/diagnóstico de una cita
+// ================================
+// Permite al doctor actualizar notas, diagnóstico y tratamiento de una cita.
+app.put("/api/doctores/citas/:citaId", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const citaId = parseInt(req.params.citaId, 10);
+  const { notas_doctor, diagnostico, tratamiento, estado } = req.body;
+
+  // Verificar que la cita pertenece al doctor autenticado
+  const checkQuery = `
+    SELECT c.id FROM citas c
+    JOIN doctores d ON c.doctor_id = d.id
+    WHERE c.id = ? AND d.usuario_id = ?
+  `;
+
+  connection.query(checkQuery, [citaId, decoded.id], (err, results) => {
+    if (err) {
+      console.error("❌ Error al verificar cita:", err);
+      return res.status(500).json({ message: "Error al verificar cita" });
+    }
+
+    if (results.length === 0) {
+      return res.status(403).json({ message: "No autorizado o cita no encontrada" });
+    }
+
+    const updateQuery = `
+      UPDATE citas SET 
+        notas_doctor = ?, diagnostico = ?, tratamiento = ?, estado = ?
+      WHERE id = ?
+    `;
+
+    connection.query(
+      updateQuery,
+      [notas_doctor, diagnostico, tratamiento, estado, citaId],
+      (err2) => {
+        if (err2) {
+          console.error("❌ Error al actualizar cita:", err2);
+          return res.status(500).json({ message: "Error al actualizar cita" });
+        }
+        res.status(200).json({ message: "✅ Cita actualizada con éxito" });
+      }
+    );
+  });
+});
+
+// ================================
+// 🧩 RUTA: Disponibilidad del doctor
+// ================================
+// Obtiene los horarios de disponibilidad del doctor autenticado.
+app.get("/api/doctores/disponibilidad", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const sql = `
+    SELECT dd.id, dd.dia_semana, dd.hora_inicio, dd.hora_fin, dd.activo
+    FROM disponibilidad_doctor dd
+    JOIN doctores d ON dd.doctor_id = d.id
+    WHERE d.usuario_id = ?
+    ORDER BY FIELD(dd.dia_semana, 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo')
+  `;
+
+  connection.query(sql, [decoded.id], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener disponibilidad:", err);
+      return res.status(500).json({ message: "Error al obtener disponibilidad" });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// ================================
+// 🧩 RUTA: Actualizar/Crear disponibilidad del doctor
+// ================================
+// Crea o actualiza la disponibilidad de un día específico.
+app.put("/api/doctores/disponibilidad", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const { dia_semana, hora_inicio, hora_fin, activo } = req.body;
+
+  if (!dia_semana || !hora_inicio || !hora_fin) {
+    return res.status(400).json({ message: "Faltan campos obligatorios" });
+  }
+
+  // Obtener doctor_id desde usuario_id
+  const getDoctorId = "SELECT id FROM doctores WHERE usuario_id = ?";
+  
+  connection.query(getDoctorId, [decoded.id], (err, results) => {
+    if (err || results.length === 0) {
+      return res.status(500).json({ message: "Error al obtener doctor" });
+    }
+
+    const doctorId = results[0].id;
+
+    // Verificar si ya existe disponibilidad para ese día
+    const checkQuery = `
+      SELECT id FROM disponibilidad_doctor 
+      WHERE doctor_id = ? AND dia_semana = ?
+    `;
+
+    connection.query(checkQuery, [doctorId, dia_semana], (err2, existing) => {
+      if (err2) {
+        return res.status(500).json({ message: "Error al verificar disponibilidad" });
+      }
+
+      if (existing.length > 0) {
+        // Actualizar existente
+        const updateQuery = `
+          UPDATE disponibilidad_doctor 
+          SET hora_inicio = ?, hora_fin = ?, activo = ?
+          WHERE doctor_id = ? AND dia_semana = ?
+        `;
+        connection.query(
+          updateQuery,
+          [hora_inicio, hora_fin, activo !== undefined ? activo : 1, doctorId, dia_semana],
+          (err3) => {
+            if (err3) {
+              return res.status(500).json({ message: "Error al actualizar disponibilidad" });
+            }
+            res.status(200).json({ message: "✅ Disponibilidad actualizada" });
+          }
+        );
+      } else {
+        // Crear nuevo
+        const insertQuery = `
+          INSERT INTO disponibilidad_doctor (doctor_id, dia_semana, hora_inicio, hora_fin, activo)
+          VALUES (?, ?, ?, ?, ?)
+        `;
+        connection.query(
+          insertQuery,
+          [doctorId, dia_semana, hora_inicio, hora_fin, activo !== undefined ? activo : 1],
+          (err3) => {
+            if (err3) {
+              return res.status(500).json({ message: "Error al crear disponibilidad" });
+            }
+            res.status(200).json({ message: "✅ Disponibilidad creada" });
+          }
+        );
+      }
+    });
+  });
+});
+
+// ================================
+// 🧩 RUTA: Eliminar disponibilidad del doctor
+// ================================
+app.delete("/api/doctores/disponibilidad/:disponibilidadId", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const disponibilidadId = parseInt(req.params.disponibilidadId, 10);
+
+  // Verificar que la disponibilidad pertenece al doctor autenticado
+  const checkQuery = `
+    SELECT dd.id FROM disponibilidad_doctor dd
+    JOIN doctores d ON dd.doctor_id = d.id
+    WHERE dd.id = ? AND d.usuario_id = ?
+  `;
+
+  connection.query(checkQuery, [disponibilidadId, decoded.id], (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: "Error al verificar disponibilidad" });
+    }
+
+    if (results.length === 0) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    const deleteQuery = "DELETE FROM disponibilidad_doctor WHERE id = ?";
+    connection.query(deleteQuery, [disponibilidadId], (err2) => {
+      if (err2) {
+        return res.status(500).json({ message: "Error al eliminar disponibilidad" });
+      }
+      res.status(200).json({ message: "✅ Disponibilidad eliminada" });
+    });
+  });
+});
+
+// ================================
+// 🧩 RUTA: Pacientes del doctor
+// ================================
+// Lista todos los pacientes que han tenido citas con el doctor.
+app.get("/api/doctores/pacientes", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const sql = `
+    SELECT DISTINCT
+      p.id as paciente_id,
+      up.nombres,
+      up.apellidos,
+      up.email,
+      p.telefono,
+      p.fecha_nacimiento,
+      p.genero,
+      p.tipo_sangre,
+      p.alergias,
+      p.condiciones_medicas,
+      (SELECT COUNT(*) FROM citas WHERE paciente_id = p.id AND doctor_id = d.id) as total_citas,
+      (SELECT MAX(fecha_hora) FROM citas WHERE paciente_id = p.id AND doctor_id = d.id) as ultima_cita
+    FROM citas c
+    JOIN doctores d ON c.doctor_id = d.id
+    JOIN pacientes p ON c.paciente_id = p.id
+    JOIN usuarios up ON p.usuario_id = up.id
+    WHERE d.usuario_id = ?
+    ORDER BY ultima_cita DESC
+  `;
+
+  connection.query(sql, [decoded.id], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener pacientes:", err);
+      return res.status(500).json({ message: "Error al obtener pacientes" });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// ================================
+// 🧩 RUTA: Historial médico de un paciente (visto por el doctor)
+// ================================
+// El doctor puede ver el historial de un paciente con el que ha tenido citas.
+app.get("/api/doctores/pacientes/:pacienteId/historial", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const pacienteId = parseInt(req.params.pacienteId, 10);
+
+  // Verificar que el doctor ha tenido citas con este paciente
+  const checkQuery = `
+    SELECT c.id FROM citas c
+    JOIN doctores d ON c.doctor_id = d.id
+    WHERE c.paciente_id = ? AND d.usuario_id = ?
+    LIMIT 1
+  `;
+
+  connection.query(checkQuery, [pacienteId, decoded.id], (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: "Error al verificar relación" });
+    }
+
+    if (results.length === 0) {
+      return res.status(403).json({ message: "No autorizado para ver este historial" });
+    }
+
+    const sql = `
+      SELECT 
+        hm.id,
+        hm.tipo,
+        hm.titulo,
+        hm.descripcion,
+        hm.fecha_evento,
+        ud.nombres as doctor_nombres,
+        ud.apellidos as doctor_apellidos
+      FROM historial_medico hm
+      LEFT JOIN doctores d ON hm.doctor_id = d.id
+      LEFT JOIN usuarios ud ON d.usuario_id = ud.id
+      WHERE hm.paciente_id = ?
+      ORDER BY hm.fecha_evento DESC
+    `;
+
+    connection.query(sql, [pacienteId], (err2, rows) => {
+      if (err2) {
+        console.error("❌ Error al obtener historial:", err2);
+        return res.status(500).json({ message: "Error al obtener historial" });
+      }
+      res.status(200).json(rows);
+    });
+  });
+});
+
+// ================================
+// 🧩 RUTA: Valoraciones recibidas por el doctor
+// ================================
+// Muestra las valoraciones que los pacientes han dejado al doctor.
+app.get("/api/doctores/valoraciones", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const sql = `
+    SELECT 
+      v.id,
+      v.puntuacion,
+      v.comentario,
+      v.fecha,
+      up.nombres as paciente_nombres,
+      up.apellidos as paciente_apellidos
+    FROM valoraciones v
+    JOIN doctores d ON v.doctor_id = d.id
+    JOIN pacientes p ON v.paciente_id = p.id
+    JOIN usuarios up ON p.usuario_id = up.id
+    WHERE d.usuario_id = ?
+    ORDER BY v.fecha DESC
+  `;
+
+  connection.query(sql, [decoded.id], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener valoraciones:", err);
+      return res.status(500).json({ message: "Error al obtener valoraciones" });
+    }
+
+    // Calcular estadísticas
+    const totalValoraciones = rows.length;
+    const promedioValoracion = totalValoraciones > 0 
+      ? rows.reduce((sum, v) => sum + v.puntuacion, 0) / totalValoraciones 
+      : 0;
+
+    res.status(200).json({
+      valoraciones: rows,
+      estadisticas: {
+        total: totalValoraciones,
+        promedio: Math.round(promedioValoracion * 10) / 10
+      }
+    });
+  });
+});
+
+// ================================
+// 🧩 RUTA: Pagos/ingresos del doctor
+// ================================
+// Muestra los pagos recibidos por el doctor (ingresos).
+app.get("/api/doctores/ingresos", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const sql = `
+    SELECT 
+      pg.id,
+      pg.monto,
+      pg.metodo_pago,
+      pg.estado,
+      pg.fecha_pago,
+      pg.fecha_creacion,
+      f.numero_factura,
+      up.nombres as paciente_nombres,
+      up.apellidos as paciente_apellidos,
+      c.fecha_hora as fecha_cita,
+      c.tipo_consulta
+    FROM pagos pg
+    JOIN doctores d ON pg.doctor_id = d.id
+    JOIN pacientes p ON pg.paciente_id = p.id
+    JOIN usuarios up ON p.usuario_id = up.id
+    LEFT JOIN citas c ON pg.cita_id = c.id
+    LEFT JOIN facturas f ON pg.id = f.pago_id
+    WHERE d.usuario_id = ?
+    ORDER BY pg.fecha_creacion DESC
+  `;
+
+  connection.query(sql, [decoded.id], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener ingresos:", err);
+      return res.status(500).json({ message: "Error al obtener ingresos" });
+    }
+
+    // Calcular estadísticas de ingresos
+    const ingresosTotales = rows
+      .filter(p => p.estado === 'pagado')
+      .reduce((sum, p) => sum + parseFloat(p.monto), 0);
+    
+    const ingresosPendientes = rows
+      .filter(p => p.estado === 'pendiente')
+      .reduce((sum, p) => sum + parseFloat(p.monto), 0);
+
+    res.status(200).json({
+      pagos: rows,
+      estadisticas: {
+        total_pagado: ingresosTotales,
+        total_pendiente: ingresosPendientes,
+        cantidad_pagos: rows.length
+      }
+    });
+  });
+});
+
+// ================================
+// 🧩 RUTA: Estadísticas del dashboard del doctor
+// ================================
+// Proporciona datos resumidos para el dashboard del doctor.
+app.get("/api/doctores/dashboard", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  // Obtener doctor_id
+  const getDoctorId = "SELECT id FROM doctores WHERE usuario_id = ?";
+  
+  connection.query(getDoctorId, [decoded.id], (err, doctorResults) => {
+    if (err || doctorResults.length === 0) {
+      return res.status(500).json({ message: "Error al obtener doctor" });
+    }
+
+    const doctorId = doctorResults[0].id;
+
+    // Consultas para estadísticas
+    const queries = {
+      citasHoy: `
+        SELECT COUNT(*) as count FROM citas 
+        WHERE doctor_id = ? AND DATE(fecha_hora) = CURDATE()
+      `,
+      citasSemana: `
+        SELECT COUNT(*) as count FROM citas 
+        WHERE doctor_id = ? AND YEARWEEK(fecha_hora, 1) = YEARWEEK(CURDATE(), 1)
+      `,
+      citasPendientes: `
+        SELECT COUNT(*) as count FROM citas 
+        WHERE doctor_id = ? AND estado IN ('pendiente', 'confirmada') AND fecha_hora > NOW()
+      `,
+      totalPacientes: `
+        SELECT COUNT(DISTINCT paciente_id) as count FROM citas WHERE doctor_id = ?
+      `,
+      ingresosMes: `
+        SELECT COALESCE(SUM(monto), 0) as total FROM pagos 
+        WHERE doctor_id = ? AND estado = 'pagado' 
+        AND MONTH(fecha_pago) = MONTH(CURDATE()) AND YEAR(fecha_pago) = YEAR(CURDATE())
+      `,
+      valoracionPromedio: `
+        SELECT COALESCE(AVG(puntuacion), 0) as promedio, COUNT(*) as total 
+        FROM valoraciones WHERE doctor_id = ?
+      `
+    };
+
+    const stats = {};
+    let completedQueries = 0;
+    const totalQueries = Object.keys(queries).length;
+
+    Object.entries(queries).forEach(([key, sql]) => {
+      connection.query(sql, [doctorId], (err, results) => {
+        if (!err && results.length > 0) {
+          if (key === 'valoracionPromedio') {
+            stats[key] = {
+              promedio: Math.round(results[0].promedio * 10) / 10,
+              total: results[0].total
+            };
+          } else if (key === 'ingresosMes') {
+            stats[key] = parseFloat(results[0].total);
+          } else {
+            stats[key] = results[0].count;
+          }
+        }
+        
+        completedQueries++;
+        if (completedQueries === totalQueries) {
+          res.status(200).json(stats);
+        }
+      });
+    });
+  });
+});
+
+// ================================
+// 🧩 RUTA: Agregar entrada al historial médico (por doctor)
+// ================================
+// Permite al doctor agregar una entrada al historial médico de un paciente.
+app.post("/api/doctores/historial", (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token no proporcionado" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const { paciente_id, cita_id, tipo, titulo, descripcion, fecha_evento } = req.body;
+
+  if (!paciente_id || !tipo || !titulo) {
+    return res.status(400).json({ message: "Faltan campos obligatorios" });
+  }
+
+  // Obtener doctor_id y verificar que el paciente ha tenido citas con este doctor
+  const getDoctorId = "SELECT id FROM doctores WHERE usuario_id = ?";
+  
+  connection.query(getDoctorId, [decoded.id], (err, doctorResults) => {
+    if (err || doctorResults.length === 0) {
+      return res.status(500).json({ message: "Error al obtener doctor" });
+    }
+
+    const doctorId = doctorResults[0].id;
+
+    // Verificar relación doctor-paciente
+    const checkQuery = `
+      SELECT id FROM citas WHERE doctor_id = ? AND paciente_id = ? LIMIT 1
+    `;
+
+    connection.query(checkQuery, [doctorId, paciente_id], (err2, results) => {
+      if (err2) {
+        return res.status(500).json({ message: "Error al verificar relación" });
+      }
+
+      if (results.length === 0) {
+        return res.status(403).json({ message: "No autorizado para agregar historial a este paciente" });
+      }
+
+      const insertQuery = `
+        INSERT INTO historial_medico (paciente_id, doctor_id, cita_id, tipo, titulo, descripcion, fecha_evento)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      connection.query(
+        insertQuery,
+        [paciente_id, doctorId, cita_id || null, tipo, titulo, descripcion || null, fecha_evento || new Date()],
+        (err3) => {
+          if (err3) {
+            console.error("❌ Error al insertar historial:", err3);
+            return res.status(500).json({ message: "Error al crear entrada de historial" });
+          }
+          res.status(200).json({ message: "✅ Entrada de historial creada con éxito" });
+        }
+      );
+    });
+  });
+});
+
+// ================================
 // 🚀 Iniciar servidor
 // ================================
 // Inicio del servidor HTTP

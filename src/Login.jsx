@@ -29,11 +29,30 @@ function Login() {
       });
 
       // Guardar el token y los datos del usuario
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+      const { token, user } = response.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // También guardamos campos útiles por separado para otras pantallas
+      if (user) {
+        if (user.tipo) localStorage.setItem("tipo", user.tipo);
+        if (user.nombres) localStorage.setItem("nombres", user.nombres);
+        if (user.apellidos) localStorage.setItem("apellidos", user.apellidos);
+      }
 
       setMensaje("✅ Inicio de sesión exitoso");
-      setTimeout(() => navigate("/"), 1000); // Redirige al inicio
+
+      // Redirigir según el tipo de usuario
+      const tipo = user?.tipo;
+      setTimeout(() => {
+        if (tipo === "doctor") {
+          navigate("/perfil-doctor");
+        } else if (tipo === "paciente") {
+          navigate("/perfil");
+        } else {
+          navigate("/");
+        }
+      }, 800);
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       if (error.response) {
