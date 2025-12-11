@@ -1651,6 +1651,468 @@ app.post("/api/doctores/historial", (req, res) => {
 });
 
 // ================================
+// 🧩 RUTAS PÚBLICAS DE BÚSQUEDA DE DOCTORES
+// ================================
+
+// ================================
+// 🧩 RUTA: Buscar doctores (público)
+// ================================
+// Búsqueda de doctores con filtros opcionales.
+// Query params: especialidad_id, departamento_id, provincia_id, nombre, genero
+// Respuesta: array de doctores con sus especialidades y valoración promedio.
+app.get("/api/buscar-doctores", (req, res) => {
+  const { especialidad_id, departamento_id, provincia_id, nombre, genero } = req.query;
+
+  let sql = `
+    SELECT DISTINCT
+      d.id as doctor_id,
+      u.id as usuario_id,
+      u.nombres,
+      u.apellidos,
+      d.telefono,
+      d.genero,
+      d.foto_perfil,
+      d.consultorio_direccion,
+      d.descripcion,
+      d.experiencia,
+      d.formacion,
+      d.certificaciones,
+      d.costo_consulta,
+      dep.id as departamento_id,
+      dep.nombre as departamento_nombre,
+      prov.id as provincia_id,
+      prov.nombre as provincia_nombre,
+      e.id as especialidad_id,
+      e.nombre as especialidad_nombre,
+      (SELECT COALESCE(AVG(v.puntuacion), 0) FROM valoraciones v WHERE v.doctor_id = d.id) as valoracion_promedio,
+      (SELECT COUNT(*) FROM valoraciones v WHERE v.doctor_id = d.id) as total_valoraciones,
+      (SELECT COUNT(*) FROM citas c WHERE c.doctor_id = d.id AND c.estado = 'completada') as total_consultas
+    FROM doctores d
+    JOIN usuarios u ON d.usuario_id = u.id
+    LEFT JOIN departamentos dep ON d.departamento_id = dep.id
+    LEFT JOIN provincias prov ON d.provincia_id = prov.id
+    LEFT JOIN doctor_especialidad de ON d.id = de.doctor_id AND de.es_principal = 1
+    LEFT JOIN especialidades e ON de.especialidad_id = e.id
+    WHERE d.activo = 1 AND u.activo = 1
+  `;
+
+  const params = [];
+
+  // Filtro por especialidad
+  if (especialidad_id) {
+    sql += ` AND de.especialidad_id = ?`;
+    params.push(especialidad_id);
+  }
+
+  // Filtro por departamento
+  if (departamento_id) {
+    sql += ` AND d.departamento_id = ?`;
+    params.push(departamento_id);
+  }
+
+  // Filtro por provincia
+  if (provincia_id) {
+    sql += ` AND d.provincia_id = ?`;
+    params.push(provincia_id);
+  }
+
+  // Filtro por nombre (búsqueda parcial en nombres o apellidos)
+  if (nombre) {
+    sql += ` AND (u.nombres LIKE ? OR u.apellidos LIKE ? OR CONCAT(u.nombres, ' ', u.apellidos) LIKE ?)`;
+    const searchTerm = `%${nombre}%`;
+    params.push(searchTerm, searchTerm, searchTerm);
+  }
+
+  // Filtro por género
+  if (genero) {
+    sql += ` AND d.genero = ?`;
+    params.push(genero);
+  }
+
+  sql += ` ORDER BY valoracion_promedio DESC, u.nombres ASC`;
+
+  connection.query(sql, params, (err, rows) => {
+    if (err) {
+      console.error("❌ Error al buscar doctores:", err);
+      return res.status(500).json({ message: "Error al buscar doctores" });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// ================================
+// 🧩 RUTA: Obtener detalle de un doctor (público)
+// ================================
+// Obtiene información completa de un doctor por su ID.
+// Path param: :doctorId
+app.get("/api/doctores/:doctorId/detalle", (req, res) => {
+  const doctorId = parseInt(req.params.doctorId, 10);
+
+  if (!Number.isInteger(doctorId)) {
+    return res.status(400).json({ message: "ID de doctor inválido" });
+  }
+
+  const sql = `
+    SELECT 
+      d.id as doctor_id,
+      u.id as usuario_id,
+      u.nombres,
+      u.apellidos,
+      u.email,
+      d.telefono,
+      d.genero,
+      d.foto_perfil,
+      d.consultorio_direccion,
+      d.descripcion,
+      d.experiencia,
+      d.formacion,
+      d.certificaciones,
+      d.costo_consulta,
+      dep.nombre as departamento_nombre,
+      prov.nombre as provincia_nombre,
+      (SELECT COALESCE(AVG(v.puntuacion), 0) FROM valoraciones v WHERE v.doctor_id = d.id) as valoracion_promedio,
+      (SELECT COUNT(*) FROM valoraciones v WHERE v.doctor_id = d.id) as total_valoraciones
+    FROM doctores d
+    JOIN usuarios u ON d.usuario_id = u.id
+    LEFT JOIN departamentos dep ON d.departamento_id = dep.id
+    LEFT JOIN provincias prov ON d.provincia_id = prov.id
+    WHERE d.id = ? AND d.activo = 1
+  `;
+
+  connection.query(sql, [doctorId], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener doctor:", err);
+      return res.status(500).json({ message: "Error al obtener doctor" });
+    }
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Doctor no encontrado" });
+    }
+
+    // Obtener especialidades del doctor
+    const sqlEspecialidades = `
+      SELECT e.id, e.nombre, de.es_principal
+      FROM doctor_especialidad de
+      JOIN especialidades e ON de.especialidad_id = e.id
+      WHERE de.doctor_id = ?
+      ORDER BY de.es_principal DESC
+    `;
+
+    connection.query(sqlEspecialidades, [doctorId], (err2, especialidades) => {
+      if (err2) {
+        console.error("❌ Error al obtener especialidades:", err2);
+        return res.status(500).json({ message: "Error al obtener especialidades" });
+      }
+
+      // Obtener disponibilidad del doctor
+      const sqlDisponibilidad = `
+        SELECT dia_semana, hora_inicio, hora_fin
+        FROM disponibilidad_doctor
+        WHERE doctor_id = ? AND activo = 1
+        ORDER BY FIELD(dia_semana, 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo')
+      `;
+
+      connection.query(sqlDisponibilidad, [doctorId], (err3, disponibilidad) => {
+        if (err3) {
+          console.error("❌ Error al obtener disponibilidad:", err3);
+          return res.status(500).json({ message: "Error al obtener disponibilidad" });
+        }
+
+        // Obtener últimas valoraciones
+        const sqlValoraciones = `
+          SELECT 
+            v.puntuacion,
+            v.comentario,
+            v.fecha,
+            up.nombres as paciente_nombres
+          FROM valoraciones v
+          JOIN pacientes p ON v.paciente_id = p.id
+          JOIN usuarios up ON p.usuario_id = up.id
+          WHERE v.doctor_id = ?
+          ORDER BY v.fecha DESC
+          LIMIT 5
+        `;
+
+        connection.query(sqlValoraciones, [doctorId], (err4, valoraciones) => {
+          if (err4) {
+            console.error("❌ Error al obtener valoraciones:", err4);
+            return res.status(500).json({ message: "Error al obtener valoraciones" });
+          }
+
+          res.status(200).json({
+            ...rows[0],
+            especialidades: especialidades || [],
+            disponibilidad: disponibilidad || [],
+            valoraciones: valoraciones || []
+          });
+        });
+      });
+    });
+  });
+});
+
+// ================================
+// 🧩 RUTA: Obtener departamentos (público)
+// ================================
+app.get("/api/departamentos", (req, res) => {
+  const sql = "SELECT id, nombre FROM departamentos WHERE activo = 1 ORDER BY nombre";
+
+  connection.query(sql, (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener departamentos:", err);
+      return res.status(500).json({ message: "Error al obtener departamentos" });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// ================================
+// 🧩 RUTA: Obtener provincias por departamento (público)
+// ================================
+app.get("/api/departamentos/:departamentoId/provincias", (req, res) => {
+  const departamentoId = parseInt(req.params.departamentoId, 10);
+
+  if (!Number.isInteger(departamentoId)) {
+    return res.status(400).json({ message: "ID de departamento inválido" });
+  }
+
+  const sql = "SELECT id, nombre FROM provincias WHERE departamento_id = ? AND activo = 1 ORDER BY nombre";
+
+  connection.query(sql, [departamentoId], (err, rows) => {
+    if (err) {
+      console.error("❌ Error al obtener provincias:", err);
+      return res.status(500).json({ message: "Error al obtener provincias" });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// ================================
+// 🧩 RUTA: Chatbot con DeepSeek AI (Streaming)
+// ================================
+// Endpoint para el chatbot de IA usando DeepSeek API en modo streaming.
+// Request body: { messages: [{ role: "user"|"assistant", content: string }] }
+// Requiere autenticación JWT.
+// Respuesta: Stream de eventos SSE con el contenido generado.
+app.post("/api/chatbot", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token requerido" });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+
+  const { messages } = req.body;
+
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ message: "Se requiere un array de mensajes" });
+  }
+
+  // Configurar headers para streaming
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  try {
+    // System prompt detallado para el asistente de Doctoralia
+    const systemPrompt = {
+      role: "system",
+      content: `Eres "Doctoralia AI", el asistente virtual EXCLUSIVO de la plataforma Doctoralia Perú. Tu ÚNICO propósito es ayudar a los usuarios con temas relacionados a:
+1. La plataforma Doctoralia y cómo usarla
+2. Información general de salud y orientación médica básica
+3. Guiar a los usuarios para que agenden citas con doctores
+
+=== INFORMACIÓN DE LA PLATAFORMA DOCTORALIA ===
+
+**¿Qué es Doctoralia?**
+Doctoralia es una plataforma de salud que conecta pacientes con médicos especialistas. Permite buscar doctores, ver sus perfiles, leer valoraciones de otros pacientes y agendar citas médicas de forma fácil y segura.
+
+**CÓMO BUSCAR DOCTORES:**
+1. En el menú principal, haz clic en "Doctores"
+2. Usa los filtros disponibles para encontrar al especialista ideal:
+   - Por especialidad (Cardiología, Pediatría, Dermatología, Ginecología, Ortopedia, etc.)
+   - Por ubicación (departamento y provincia)
+   - Por nombre del doctor
+   - Por género del médico
+3. Cada doctor muestra: foto, nombre, especialidad, ubicación, valoración promedio, costo de consulta y número de consultas realizadas
+4. Haz clic en "Ver perfil" para más detalles del doctor
+
+**PERFIL DEL DOCTOR - ¿QUÉ PUEDES VER?**
+- Información personal: nombre, especialidad, foto
+- Descripción profesional y experiencia
+- Formación académica y certificaciones
+- Dirección del consultorio
+- Costo de la consulta
+- Valoraciones y opiniones de otros pacientes
+- Disponibilidad horaria
+
+**CÓMO AGENDAR UNA CITA:**
+1. Busca un doctor usando los filtros
+2. Entra al perfil del doctor que te interese
+3. Revisa su disponibilidad y horarios
+4. Selecciona fecha y hora disponible
+5. Completa el motivo de consulta y síntomas (opcional)
+6. Confirma tu cita
+7. Recibirás confirmación y podrás ver tu cita en tu perfil
+
+**TU PERFIL DE PACIENTE:**
+Para acceder a tu perfil, haz clic en el ícono de usuario en la esquina superior derecha o ve a "Mi Perfil". Ahí puedes:
+- Ver y editar tu información personal (nombre, email, teléfono)
+- Actualizar tu información médica:
+  * Tipo de sangre
+  * Alergias conocidas
+  * Condiciones médicas existentes
+  * Medicamentos actuales
+- Agregar contacto de emergencia
+- Información de seguro médico
+- Ver tu PRÓXIMA CITA programada
+- Acceder a tu HISTORIAL MÉDICO
+- Ver todas tus CITAS (pasadas y futuras)
+- Revisar tus PAGOS y facturas
+- Ver las VALORACIONES que has dejado a doctores
+
+**TIPOS DE CONSULTA:**
+- Presencial: acudes físicamente al consultorio del doctor
+- Virtual/Teleconsulta: consulta por videollamada desde tu casa
+
+**ESTADOS DE CITAS:**
+- Pendiente: cita solicitada, esperando confirmación
+- Confirmada: el doctor confirmó la cita
+- En curso: la consulta está sucediendo
+- Completada: consulta finalizada
+- Cancelada: cita fue cancelada
+
+**PAGOS:**
+- Se pueden realizar pagos por: tarjeta de crédito, tarjeta de débito, transferencia, efectivo o PayPal
+- Después del pago se genera una factura con número único
+- Puedes ver el historial de pagos en tu perfil
+
+**VALORACIONES:**
+Después de una consulta completada, puedes valorar al doctor:
+- Puntuación de 1 a 5 estrellas
+- Comentario sobre tu experiencia
+- Ayudas a otros pacientes a elegir mejor
+
+**ESPECIALIDADES DISPONIBLES:**
+- Cardiología (corazón y sistema circulatorio)
+- Pediatría (salud infantil)
+- Dermatología (enfermedades de la piel)
+- Ginecología (salud reproductiva femenina)
+- Ortopedia (sistema musculoesquelético, huesos, articulaciones)
+
+**UBICACIONES:**
+Doctores disponibles en múltiples departamentos del Perú:
+Lima, Arequipa, Cusco, La Libertad (Trujillo), Piura, Lambayeque (Chiclayo), Junín (Huancayo), Puno, Ancash, Ica
+
+**CONTACTO Y SOPORTE:**
+Para contactar a soporte de Doctoralia:
+1. Ve a "Contacto" en el menú
+2. Selecciona tu tipo de usuario
+3. Ingresa tu email
+4. Escribe tu mensaje o consulta
+5. El equipo de soporte responderá a tu email
+
+=== REGLAS ESTRICTAS QUE DEBES SEGUIR ===
+
+❌ NUNCA hagas lo siguiente:
+- NO diagnostiques enfermedades específicas
+- NO recetes medicamentos ni des dosificaciones
+- NO ayudes con temas que NO sean de salud o de la plataforma Doctoralia
+- NO hables de otras plataformas de salud o competidores
+- NO proporciones información de otras páginas web
+- NO ayudes con tareas, programación, matemáticas u otros temas no relacionados
+- NO inventes información sobre la plataforma
+
+✅ SIEMPRE haz lo siguiente:
+- Responde SOLO sobre Doctoralia y temas de salud general
+- Si preguntan algo no relacionado, responde amablemente: "Lo siento, solo puedo ayudarte con temas relacionados a la plataforma Doctoralia y orientación de salud general. ¿Hay algo sobre cómo buscar doctores, agendar citas o usar la plataforma en lo que pueda ayudarte?"
+- Si describen síntomas, sugiere qué tipo de especialista consultar y guíalos a usar la búsqueda de doctores
+- Para síntomas graves (dolor de pecho, dificultad para respirar, sangrado severo, etc.), recomienda ir a urgencias INMEDIATAMENTE
+- Sé amable, empático y profesional
+- Responde en español
+- Si no estás seguro de algo sobre la plataforma, sugiere contactar a soporte
+
+=== EJEMPLOS DE RESPUESTAS ===
+
+Usuario: "Me duele la cabeza frecuentemente"
+Respuesta: "Los dolores de cabeza frecuentes pueden tener varias causas. Te recomiendo consultar con un especialista. En Doctoralia puedes buscar un Neurólogo o Médico General. Ve a 'Doctores' en el menú, filtra por la especialidad que prefieras y tu ubicación, y agenda una cita con el profesional que mejor se adapte a tus necesidades. ¿Te gustaría que te explique cómo usar los filtros de búsqueda?"
+
+Usuario: "¿Cómo hago para cambiar mi email?"
+Respuesta: "Para cambiar tu email en Doctoralia: 1) Haz clic en el ícono de usuario arriba a la derecha, 2) Ve a 'Mi Perfil', 3) En la sección de información personal podrás editar tu email, teléfono y otros datos, 4) Guarda los cambios. ¿Necesitas ayuda con algo más de tu perfil?"
+
+Usuario: "Ayúdame con mi tarea de matemáticas"
+Respuesta: "Lo siento, solo puedo ayudarte con temas relacionados a la plataforma Doctoralia y orientación de salud general. ¿Hay algo sobre cómo buscar doctores, agendar citas o usar la plataforma en lo que pueda ayudarte?"`
+    };
+
+    // Llamada a DeepSeek API
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY || "sk-a874fe896ed84f96aed0c2be1a87091b"}`
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [systemPrompt, ...messages],
+        stream: true,
+        max_tokens: 1024,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error("❌ Error de DeepSeek API:", errorData);
+      res.write(`data: ${JSON.stringify({ error: "Error al conectar con el servicio de IA" })}\n\n`);
+      res.write("data: [DONE]\n\n");
+      return res.end();
+    }
+
+    // Procesar streaming response
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') {
+            res.write("data: [DONE]\n\n");
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              res.write(`data: ${JSON.stringify({ content })}\n\n`);
+            }
+          } catch (e) {
+            // Ignorar errores de parsing de chunks incompletos
+          }
+        }
+      }
+    }
+
+    res.end();
+  } catch (error) {
+    console.error("❌ Error en chatbot:", error);
+    res.write(`data: ${JSON.stringify({ error: "Error interno del servidor" })}\n\n`);
+    res.write("data: [DONE]\n\n");
+    res.end();
+  }
+});
+
+// ================================
 // 🚀 Iniciar servidor
 // ================================
 // Inicio del servidor HTTP

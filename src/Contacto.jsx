@@ -19,16 +19,31 @@ function Contacto() {
 
   // --- Estado y funciones de autenticación ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userType, setUserType] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) setIsLoggedIn(true);
+    const token = localStorage.getItem("token");
+    const tipo = localStorage.getItem("tipo");
+    if (token) {
+      setIsLoggedIn(true);
+      setUserType(tipo || "");
+    }
   }, []);
 
+  // Función para obtener el enlace de perfil según el tipo de usuario
+  const getProfileLink = () => {
+    if (!isLoggedIn) return "/login";
+    return userType === "doctor" ? "/perfil-doctor" : "/perfil";
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("tipo");
+    localStorage.removeItem("nombres");
+    localStorage.removeItem("apellidos");
     setIsLoggedIn(false);
+    setUserType("");
     navigate("/login");
   };
 
@@ -84,10 +99,10 @@ function Contacto() {
                   <Link to="/" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Inicio</Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Doctores</a>
+                  <Link to="/buscar-doctores" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Doctores</Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Servicios</a>
+                  <Link to="/chatbot" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Asistente IA</Link>
                 </li>
                 <li>
                   <Link to="/contacto" className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']">Contacto</Link>
@@ -115,7 +130,7 @@ function Contacto() {
                   <button className="text-white hover:text-[#A9E8E0] p-2">
                     <Search size={22} />
                   </button>
-                  <Link to="/perfil" className="text-white hover:text-[#A9E8E0] p-2">
+                  <Link to={getProfileLink()} className="text-white hover:text-[#A9E8E0] p-2">
                     <CircleUserRound size={25} />
                   </Link>
                 </div>
@@ -131,8 +146,8 @@ function Contacto() {
                   className="menu dropdown-content bg-[#0A3C3F] text-white rounded-box z-[50] mt-3 w-64 p-4 shadow-lg"
                 >
                   <li><Link to="/" className="hover:text-[#A9E8E0] text-lg py-2">Inicio</Link></li>
-                  <li><a href="#" className="hover:text-[#A9E8E0] text-lg py-2">Doctores</a></li>
-                  <li><a href="#" className="hover:text-[#A9E8E0] text-lg py-2">Servicios</a></li>
+                  <li><Link to="/buscar-doctores" className="hover:text-[#A9E8E0] text-lg py-2">Doctores</Link></li>
+                  <li><Link to="/chatbot" className="hover:text-[#A9E8E0] text-lg py-2">Asistente IA</Link></li>
                   <li><Link to="/contacto" className="hover:text-[#A9E8E0] text-lg py-2">Contacto</Link></li>
 
                   <div className="pt-3 mt-3 border-t border-white">
@@ -146,7 +161,7 @@ function Contacto() {
                       <>
                         <li className="mt-2">
                           <Link
-                            to="/perfil"
+                            to={getProfileLink()}
                             className="button rounded border border-white text-white px-5 py-2 text-base hover:bg-white hover:text-[#0A3C3F] flex items-center justify-center w-full"
                           >
                             Mi Perfil

@@ -40,24 +40,37 @@ function Perfil() {
   // ---------------------------------------------------------------------------
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Indica si hay sesión activa
   const [userName, setUserName] = useState(""); // Nombre (visual) del usuario logueado
+  const [userType, setUserType] = useState(""); // Tipo de usuario (doctor/paciente)
   const [activeSection, setActiveSection] = useState("Dashboard"); // Sección actual del menú
   const navigate = useNavigate(); // Hook para redirecciones programáticas
 
   // Verificar si el usuario está logueado y obtener datos iniciales.
-  // Aquí solo marca sesión y setea un nombre dummy (mejorable: usar datos reales).
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) {
+    const token = localStorage.getItem("token");
+    const tipo = localStorage.getItem("tipo");
+    const nombres = localStorage.getItem("nombres");
+    if (token) {
       setIsLoggedIn(true);
-      setUserName("Vineta Pham");
+      setUserType(tipo || "");
+      setUserName(nombres || "Usuario");
     }
   }, []);
 
+  // Función para obtener el enlace de perfil según el tipo de usuario
+  const getProfileLink = () => {
+    if (!isLoggedIn) return "/login";
+    return userType === "doctor" ? "/perfil-doctor" : "/perfil";
+  };
+
   // Cierra sesión: limpia localStorage, resetea estados locales y redirige.
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("tipo");
+    localStorage.removeItem("nombres");
+    localStorage.removeItem("apellidos");
     setIsLoggedIn(false);
     setUserName("");
+    setUserType("");
     navigate("/login");
   };
 
@@ -110,20 +123,20 @@ function Perfil() {
                   </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link
+                    to="/buscar-doctores"
                     className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']"
                   >
                     Doctores
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="/appcopy"
+                  <Link
+                    to="/chatbot"
                     className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']"
                   >
-                    Servicios
-                  </a>
+                    Asistente IA
+                  </Link>
                 </li>
                 <li>
                   <Link
@@ -157,7 +170,7 @@ function Perfil() {
                     <Search size={22} />
                   </button>
                   <Link
-                    to="/perfil"
+                    to={getProfileLink()}
                     className="text-white hover:text-[#A9E8E0] p-2"
                   >
                     <CircleUserRound size={25} />
@@ -184,14 +197,14 @@ function Perfil() {
                     </Link>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-[#A9E8E0] text-lg py-2">
+                    <Link to="/buscar-doctores" className="hover:text-[#A9E8E0] text-lg py-2">
                       Doctores
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-[#A9E8E0] text-lg py-2">
-                      Servicios
-                    </a>
+                    <Link to="/chatbot" className="hover:text-[#A9E8E0] text-lg py-2">
+                      Asistente IA
+                    </Link>
                   </li>
                   <li>
                     <Link
@@ -204,19 +217,19 @@ function Perfil() {
 
                   <div className="pt-3 mt-3 border-t border-white">
                     <li className="py-1">
-                      <a
-                        href="#"
+                      <Link
+                        to="/buscar-doctores"
                         className="hover:text-[#A9E8E0] flex items-center text-lg p-2"
                       >
                         <Search size={20} className="mr-3" /> Buscar
-                      </a>
+                      </Link>
                     </li>
 
                     {isLoggedIn ? (
                       <>
                         <li className="mt-2">
                           <Link
-                            to="/perfil"
+                            to={getProfileLink()}
                             className="button rounded border border-white text-white px-5 py-2 text-base hover:bg-white hover:text-[#0A3C3F] flex items-center justify-center w-full"
                           >
                             Mi Perfil

@@ -117,20 +117,20 @@ function PerfilDoctor() {
 									</Link>
 								</li>
 								<li>
-									<a
-										href="#"
+									<Link
+										to="/buscar-doctores"
 										className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']"
 									>
 										Doctores
-									</a>
+									</Link>
 								</li>
 								<li>
-									<a
-										href="/appcopy"
+									<Link
+										to="/chatbot"
 										className="hover:text-[#A9E8E0] text-[1.125rem] font-['DM_Sans']"
 									>
-										Servicios
-									</a>
+										Asistente IA
+									</Link>
 								</li>
 								<li>
 									<Link
@@ -189,14 +189,14 @@ function PerfilDoctor() {
 										</Link>
 									</li>
 									<li>
-										<a href="#" className="hover:text-[#A9E8E0] text-lg py-2">
+										<Link to="/buscar-doctores" className="hover:text-[#A9E8E0] text-lg py-2">
 											Doctores
-										</a>
+										</Link>
 									</li>
 									<li>
-										<a href="#" className="hover:text-[#A9E8E0] text-lg py-2">
-											Servicios
-										</a>
+										<Link to="/chatbot" className="hover:text-[#A9E8E0] text-lg py-2">
+											Asistente IA
+										</Link>
 									</li>
 									<li>
 										<Link
@@ -209,12 +209,12 @@ function PerfilDoctor() {
 
 									<div className="pt-3 mt-3 border-t border-white">
 										<li className="py-1">
-											<a
-												href="#"
+											<Link
+												to="/buscar-doctores"
 												className="hover:text-[#A9E8E0] flex items-center text-lg p-2"
 											>
 												<Search size={20} className="mr-3" /> Buscar
-											</a>
+											</Link>
 										</li>
 
 										{isLoggedIn ? (
@@ -443,7 +443,7 @@ const DashboardDoctorContent = ({ userName }) => {
 								<div>
 									<p className="text-sm font-medium text-gray-500 mb-1">Pacientes Activos</p>
 									<p className="text-3xl font-bold text-[#0A3C3F]">
-										{stats?.pacientesActivos ?? 0}
+										{stats?.totalPacientes ?? 0}
 									</p>
 								</div>
 							</div>
@@ -1257,7 +1257,7 @@ const DoctorIncomeContent = () => {
 				const res = await axios.get("http://localhost:3001/api/doctores/ingresos", {
 					headers: { Authorization: `Bearer ${token}` },
 				});
-				setIngresos(res.data || []);
+				setIngresos(res.data.pagos || []);
 			} catch (err) {
 				setError("No se pudieron cargar los ingresos.");
 			} finally {
@@ -1299,7 +1299,7 @@ const DoctorIncomeContent = () => {
 						<p className="font-semibold text-gray-800">
 							Paciente: {i.paciente_nombres} {i.paciente_apellidos}
 						</p>
-						<p className="text-sm text-gray-500">Especialidad: {i.especialidad}</p>
+						<p className="text-sm text-gray-500">Tipo: {i.tipo_consulta}</p>
 					</div>
 					<div className="text-right">
 						<p className="font-bold text-[#0A3C3F]">S/ {i.monto}</p>
@@ -1328,7 +1328,7 @@ const DoctorReviewsContent = () => {
 				const res = await axios.get("http://localhost:3001/api/doctores/valoraciones", {
 					headers: { Authorization: `Bearer ${token}` },
 				});
-				setValoraciones(res.data || []);
+				setValoraciones(res.data.valoraciones || []);
 			} catch (err) {
 				setError("No se pudieron cargar las valoraciones.");
 			} finally {

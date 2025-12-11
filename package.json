@@ -21,6 +21,7 @@
     "match-sorter": "^8.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.4.0",
     "recharts": "^3.5.1",
     "sort-by": "^1.2.0",
